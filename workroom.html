@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workroom Mini</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="app-body">
+
+  <!-- Top App Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="app-brand">
+        <svg class="brand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+          <line x1="9" y1="9" x2="21" y2="9"></line>
+        </svg>
+        <span class="brand-name">Workroom Mini</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="user-profile">
+        <span class="user-label">Signed in as</span>
+        <strong class="username-display" id="current-username">Loading...</strong>
+      </div>
+      <button type="button" class="btn btn-subtle btn-sm" id="logout-btn" title="Sign out of Workroom Mini">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>Log out</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <div class="app-layout">
+    
+    <!-- Left Sidebar: Navigation & Project Management -->
+    <aside class="sidebar" aria-label="Main sidebar">
+      
+      <!-- Top Navigation: Dashboard -->
+      <div class="sidebar-nav">
+        <button type="button" class="sidebar-nav-item active" id="nav-dashboard-btn" aria-label="Open dashboard">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+      </div>
+
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Projects</h2>
+        <div class="sidebar-header-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="sidebar-join-project-btn" title="Join an existing project with a code">
+            <span>Join</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="new-project-toggle-btn" title="Create a new project">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>New</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Inline Project Creator Form -->
+      <div class="sidebar-new-project" id="inline-project-form" style="display: none;">
+        <form id="create-project-form">
+          <label for="new-project-name" class="visually-hidden">Project name</label>
+          <input
+            type="text"
+            id="new-project-name"
+            class="input-compact"
+            placeholder="Project name..."
+            maxlength="80"
+            autocomplete="off"
+          >
+          <div class="form-actions-inline">
+            <button type="submit" class="btn btn-primary btn-sm" id="create-project-btn">Create</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="cancel-project-btn">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Project List Container -->
+      <nav class="sidebar-content" aria-label="Project list">
+        <ul class="project-list" id="project-list" role="list">
+          <!-- Dynamically populated by workroom.js -->
+        </ul>
+        <div class="sidebar-empty" id="projects-empty-state" style="display: none;">
+          <p class="empty-title">No projects yet.</p>
+          <p class="empty-subtitle">Create or join a project to start organizing tasks.</p>
+          <div class="empty-actions-stacked">
+            <button type="button" class="btn btn-primary btn-sm" id="empty-create-project-btn">
+              + Create project
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="empty-join-project-btn">
+              Join with code
+            </button>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area: Dashboard & Project Workspace -->
+    <main class="main-content" id="main-content" aria-label="Main task workspace">
+      
+      <!-- SCREEN 1: Dashboard Workspace (Default screen) -->
+      <div class="dashboard-workspace" id="dashboard-workspace">
+        <header class="dashboard-header">
+          <div class="dashboard-title-wrapper">
+            <h1 class="dashboard-title">Dashboard</h1>
+            <span class="dashboard-subtitle">Overview of your work and deadlines</span>
+          </div>
+          <div class="dashboard-header-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="dashboard-export-btn" title="Export all Workroom data as JSON">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Export data</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="dashboard-join-project-btn" title="Join an existing project with a code">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+              <span>Join project</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="dashboard-new-project-btn" title="Create a new project">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>New project</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="dashboard-viewport" id="dashboard-viewport">
+          
+          <!-- Loading state -->
+          <div class="dashboard-loading" id="dashboard-loading" style="display: none;">
+            <p class="dashboard-loading-text">Loading overview...</p>
+          </div>
+
+          <!-- Error state -->
+          <div class="dashboard-error" id="dashboard-error" style="display: none;">
+            <p class="empty-title">Could not load dashboard</p>
+            <p class="empty-subtitle">There was a problem retrieving your dashboard data.</p>
+            <button type="button" class="btn btn-primary btn-sm" id="dashboard-retry-btn">Retry</button>
+          </div>
+
+          <!-- Empty state when 0 projects exist -->
+          <div class="dashboard-empty-projects" id="dashboard-empty-projects" style="display: none;">
+            <div class="empty-panel">
+              <svg class="empty-panel-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <h2 class="empty-title">No projects yet</h2>
+              <p class="empty-subtitle">Create your first project or join an existing one to start organizing tasks.</p>
+              <div class="empty-actions-row">
+                <button type="button" class="btn btn-primary" id="dashboard-create-first-project-btn">
+                  + Create project
+                </button>
+                <button type="button" class="btn btn-secondary" id="dashboard-join-first-project-btn">
+                  Join project
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Populated Dashboard Content -->
+          <div class="dashboard-content" id="dashboard-content">
+            
+            <!-- 1. Summary Strip -->
+            <div class="dashboard-summary-strip">
+              <div class="summary-tile" id="tile-projects">
+                <span class="summary-label">Projects</span>
+                <span class="summary-value" id="summary-projects-count">0</span>
+              </div>
+              <div class="summary-tile" id="tile-open">
+                <span class="summary-label">Open tasks</span>
+                <span class="summary-value" id="summary-open-count">0</span>
+              </div>
+              <div class="summary-tile" id="tile-due-soon">
+                <span class="summary-label">Due soon</span>
+                <span class="summary-value" id="summary-due-soon-count">0</span>
+              </div>
+              <div class="summary-tile" id="tile-overdue">
+                <span class="summary-label">Overdue</span>
+                <span class="summary-value" id="summary-overdue-count">0</span>
+              </div>
+            </div>
+
+            <!-- 2. Two-column Layout: Needs Attention & Projects -->
+            <div class="dashboard-grid">
+              
+              <!-- Left Column: Needs Attention -->
+              <section class="dashboard-panel" aria-labelledby="heading-needs-attention">
+                <div class="dashboard-panel-header">
+                  <div class="panel-header-left">
+                    <h2 class="dashboard-panel-title" id="heading-needs-attention">Needs attention</h2>
+                  </div>
+                  <span class="dashboard-panel-badge" id="attention-badge" style="display: none;">0</span>
+                </div>
+                <div class="dashboard-panel-body" id="dashboard-attention-body">
+                  <!-- Attention items rendered dynamically -->
+                </div>
+              </section>
+
+              <!-- Right Column: Projects -->
+              <section class="dashboard-panel" aria-labelledby="heading-projects-overview">
+                <div class="dashboard-panel-header">
+                  <div class="panel-header-left">
+                    <h2 class="dashboard-panel-title" id="heading-projects-overview">Projects</h2>
+                  </div>
+                  <span class="dashboard-panel-badge" id="projects-overview-badge">0</span>
+                </div>
+                <div class="dashboard-panel-body" id="dashboard-projects-body">
+                  <!-- Project rows rendered dynamically -->
+                </div>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: Project Workspace (Active when a project is selected) -->
+      <div class="project-workspace" id="project-workspace" style="display: none;">
+        
+        <!-- Project Title Header -->
+        <header class="project-header">
+          <div class="project-header-top">
+            <div class="project-title-wrapper">
+              <h1 class="project-title" id="current-project-title">Select a project</h1>
+              <span class="project-tag-joined" id="current-project-joined-tag" style="display: none;">Joined</span>
+            </div>
+            <div class="project-header-actions">
+              <button type="button" class="btn btn-secondary btn-sm" id="project-members-btn" title="View project members" style="display: none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span id="project-members-btn-label">Members</span>
+              </button>
+              <div class="project-actions-dropdown">
+                <button type="button" class="btn-icon" id="project-menu-btn" title="Project options" aria-haspopup="true" aria-expanded="false" aria-label="Project options">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <circle cx="12" cy="12" r="2"></circle>
+                    <circle cx="19" cy="12" r="2"></circle>
+                    <circle cx="5" cy="12" r="2"></circle>
+                  </svg>
+                </button>
+                <div class="dropdown-menu" id="project-menu" role="menu" style="display: none;">
+                  <button type="button" class="dropdown-item" id="menu-rename-project" role="menuitem">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    <span>Rename project</span>
+                  </button>
+                  <button type="button" class="dropdown-item" id="menu-export-project-csv" role="menuitem">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Export project (.csv)</span>
+                  </button>
+                  <button type="button" class="dropdown-item danger" id="menu-delete-project" role="menuitem">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Delete project</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Toolbar: View Switcher (Kanban first), Search, Filters, and Add Task -->
+          <div class="project-toolbar">
+            <div class="toolbar-left">
+              <div class="view-switcher" role="radiogroup" aria-label="Task view mode">
+                <!-- Kanban comes BEFORE List and is default -->
+                <button
+                  type="button"
+                  class="view-tab active"
+                  id="view-tab-kanban"
+                  role="radio"
+                  aria-checked="true"
+                  data-view="kanban"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="18" rx="1"></rect>
+                    <rect x="14" y="3" width="7" height="18" rx="1"></rect>
+                  </svg>
+                  <span>Kanban</span>
+                </button>
+                <button
+                  type="button"
+                  class="view-tab"
+                  id="view-tab-list"
+                  role="radio"
+                  aria-checked="false"
+                  data-view="list"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  <span>List</span>
+                </button>
+                <button
+                  type="button"
+                  class="view-tab"
+                  id="view-tab-canvas"
+                  role="radio"
+                  aria-checked="false"
+                  data-view="canvas"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  <span>Canvas</span>
+                </button>
+              </div>
+
+              <!-- Search Input -->
+              <div class="search-box">
+                <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input
+                  type="text"
+                  id="task-search-input"
+                  class="search-input"
+                  placeholder="Search tasks..."
+                  autocomplete="off"
+                  aria-label="Search tasks"
+                >
+                <button type="button" class="search-clear-btn" id="task-search-clear" style="display: none;" title="Clear search" aria-label="Clear search">
+                  &times;
+                </button>
+              </div>
+
+              <!-- Filter Controls -->
+              <div class="filter-controls">
+                <button type="button" class="btn btn-secondary btn-sm filter-my-tasks-btn" id="btn-my-tasks" aria-pressed="false" title="Show only tasks assigned to me">
+                  My tasks
+                </button>
+
+                <select id="filter-status" class="filter-select" aria-label="Filter by status">
+                  <option value="all">All statuses</option>
+                  <option value="Todo">Todo</option>
+                  <option value="Doing">Doing</option>
+                  <option value="Review">Review</option>
+                  <option value="Done">Done</option>
+                </select>
+
+                <select id="filter-due" class="filter-select" aria-label="Filter by due date">
+                  <option value="all">All due dates</option>
+                  <option value="due-soon">Due soon (&le; 3 days)</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="no-due">No due date</option>
+                </select>
+
+                <select id="filter-assignee" class="filter-select" aria-label="Filter by assignee">
+                  <option value="all">All assignees</option>
+                  <option value="me">My tasks</option>
+                  <option value="unassigned">Unassigned</option>
+                </select>
+
+                <button type="button" class="btn btn-subtle btn-sm filter-clear-btn" id="btn-clear-filters" style="display: none;" title="Reset all search and filter conditions">
+                  Clear filters
+                </button>
+              </div>
+            </div>
+
+            <div class="toolbar-right">
+              <button type="button" class="btn btn-primary btn-sm" id="toolbar-add-task-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Add task</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Fast Task Creator Form (Title + Description + Due Date) -->
+        <div class="inline-add-task-box" id="inline-task-box" style="display: none;">
+          <form id="fast-task-form">
+            <div class="task-form-row">
+              <div class="task-form-group flex-3">
+                <label for="fast-task-title" class="task-form-label">Task title</label>
+                <input
+                  type="text"
+                  id="fast-task-title"
+                  class="task-inline-input"
+                  placeholder="What needs to be done?"
+                  maxlength="200"
+                  autocomplete="off"
+                  required
+                >
+              </div>
+              <div class="task-form-group flex-1">
+                <label for="fast-task-assignee" class="task-form-label">Assignee <span class="label-optional">(optional)</span></label>
+                <select id="fast-task-assignee" class="task-inline-input task-select-input" aria-label="Task assignee">
+                  <option value="">Unassigned</option>
+                </select>
+              </div>
+              <div class="task-form-group flex-1">
+                <label for="fast-task-due-date" class="task-form-label">Due date <span class="label-optional">(optional)</span></label>
+                <input
+                  type="date"
+                  id="fast-task-due-date"
+                  class="task-inline-input task-date-input"
+                  aria-label="Task due date"
+                >
+              </div>
+            </div>
+            <div class="task-form-group">
+              <label for="fast-task-description" class="task-form-label">Description <span class="label-optional">(optional)</span></label>
+              <textarea
+                id="fast-task-description"
+                class="task-inline-textarea"
+                placeholder="Add context or notes..."
+                rows="2"
+                maxlength="2000"
+              ></textarea>
+            </div>
+            <div class="task-input-actions-bar">
+              <div class="task-input-hint">
+                <span>Enter in title or <strong>Ctrl+Enter</strong> to create &bull; <strong>Escape</strong> to cancel</span>
+              </div>
+              <div class="task-input-actions">
+                <button type="button" class="btn btn-ghost btn-sm" id="fast-task-cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="fast-task-submit-btn">Create Task</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Task Content Area: Switchable between Kanban and List -->
+        <div class="tasks-viewport" id="tasks-viewport">
+          
+          <!-- Empty Tasks State (Project has no tasks) -->
+          <div class="tasks-empty-state" id="tasks-empty-state" style="display: none;">
+            <p class="empty-title">No tasks in this project yet.</p>
+            <p class="empty-subtitle">Get started by creating your first task.</p>
+            <button type="button" class="btn btn-primary btn-sm" id="empty-add-task-btn">
+              + Add task
+            </button>
+          </div>
+
+          <!-- Filter Empty State (Project has tasks, but 0 match filters/search) -->
+          <div class="tasks-empty-state" id="tasks-filter-empty-state" style="display: none;">
+            <p class="empty-title">No matching tasks found.</p>
+            <p class="empty-subtitle">No tasks match your current search and filter criteria.</p>
+            <button type="button" class="btn btn-secondary btn-sm" id="filter-empty-clear-btn">
+              Clear filters
+            </button>
+          </div>
+
+          <!-- Kanban View Container (Default View) -->
+          <div class="view-kanban" id="kanban-view-container">
+            <div class="kanban-grid">
+              
+              <!-- Column: Todo -->
+              <div class="kanban-column" data-status="Todo">
+                <div class="kanban-column-header">
+                  <div class="column-title-group">
+                    <span class="status-dot status-todo" aria-hidden="true"></span>
+                    <h3 class="column-title">Todo</h3>
+                  </div>
+                  <span class="column-badge" id="badge-todo">0</span>
+                </div>
+                <div class="kanban-card-list" id="cards-todo" data-status="Todo" role="list">
+                  <!-- Cards rendered dynamically -->
+                </div>
+              </div>
+
+              <!-- Column: Doing -->
+              <div class="kanban-column" data-status="Doing">
+                <div class="kanban-column-header">
+                  <div class="column-title-group">
+                    <span class="status-dot status-doing" aria-hidden="true"></span>
+                    <h3 class="column-title">Doing</h3>
+                  </div>
+                  <span class="column-badge" id="badge-doing">0</span>
+                </div>
+                <div class="kanban-card-list" id="cards-doing" data-status="Doing" role="list">
+                  <!-- Cards rendered dynamically -->
+                </div>
+              </div>
+
+              <!-- Column: Review -->
+              <div class="kanban-column" data-status="Review">
+                <div class="kanban-column-header">
+                  <div class="column-title-group">
+                    <span class="status-dot status-review" aria-hidden="true"></span>
+                    <h3 class="column-title">Review</h3>
+                  </div>
+                  <span class="column-badge" id="badge-review">0</span>
+                </div>
+                <div class="kanban-card-list" id="cards-review" data-status="Review" role="list">
+                  <!-- Cards rendered dynamically -->
+                </div>
+              </div>
+
+              <!-- Column: Done -->
+              <div class="kanban-column" data-status="Done">
+                <div class="kanban-column-header">
+                  <div class="column-title-group">
+                    <span class="status-dot status-done" aria-hidden="true"></span>
+                    <h3 class="column-title">Done</h3>
+                  </div>
+                  <span class="column-badge" id="badge-done">0</span>
+                </div>
+                <div class="kanban-card-list" id="cards-done" data-status="Done" role="list">
+                  <!-- Cards rendered dynamically -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- List View Container -->
+          <div class="view-list" id="list-view-container" style="display: none;">
+            <div class="list-table-header">
+              <div class="col-title">Task</div>
+              <div class="col-assignee">Assignee</div>
+              <div class="col-status">Status</div>
+              <div class="col-due">Due</div>
+              <div class="col-actions">Actions</div>
+            </div>
+            <div class="list-table-body" id="list-tasks-body" role="list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Canvas View Container -->
+          <div class="view-canvas" id="canvas-view-container" style="display: none;">
+            <div class="canvas-viewport" id="canvas-viewport" tabindex="0" role="region" aria-label="Project Canvas workspace">
+              <div class="canvas-transform-layer" id="canvas-transform-layer">
+                <svg class="canvas-edges" id="canvas-edges" aria-hidden="true">
+                  <defs>
+                    <marker id="canvas-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#94a3b8"></path>
+                    </marker>
+                    <marker id="canvas-arrowhead-selected" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4f46e5"></path>
+                    </marker>
+                  </defs>
+                  <g id="canvas-edge-group" class="canvas-edge-group"></g>
+                  <path id="canvas-edge-preview" class="canvas-edge-preview" d="" style="display: none;"></path>
+                </svg>
+                <div class="canvas-surface" id="canvas-surface">
+                  <!-- Canvas nodes rendered dynamically -->
+                </div>
+                <button type="button" class="canvas-edge-delete-btn" id="canvas-edge-delete-btn" style="display: none;" title="Remove dependency">Remove dependency</button>
+              </div>
+
+              <!-- Canvas Empty State Overlay (Subtle, Fixed size) -->
+              <div class="canvas-empty-overlay" id="canvas-empty-overlay" style="display: none;" aria-live="polite">
+                <div class="canvas-empty-card">
+                  <p class="canvas-empty-title" id="canvas-empty-title">No tasks in this project yet.</p>
+                  <p class="canvas-empty-subtitle" id="canvas-empty-subtitle">Get started by creating your first task, or double-click the canvas.</p>
+                  <button type="button" class="btn btn-primary btn-sm" id="canvas-empty-add-btn">+ Add task</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="canvas-empty-clear-btn" style="display: none;">Clear filters</button>
+                </div>
+              </div>
+
+              <!-- Canvas Minimap Overview (outside transform layer so it does not scale with zoom) -->
+              <div class="canvas-minimap-container" id="canvas-minimap" style="display: none;" role="region" aria-label="Canvas overview" title="Canvas overview">
+                <svg class="canvas-minimap-svg" id="canvas-minimap-svg" aria-hidden="true">
+                  <g class="minimap-tasks" id="minimap-tasks-group"></g>
+                  <rect class="minimap-viewport" id="minimap-viewport-rect" x="0" y="0" width="0" height="0" />
+                </svg>
+              </div>
+
+              <!-- Fixed Viewport UI Overlay (outside transform layer so it doesn't scale) -->
+              <div class="canvas-zoom-controls" id="canvas-zoom-controls" role="toolbar" aria-label="Canvas zoom controls">
+                <button type="button" class="btn-canvas-ctrl" id="btn-zoom-out" title="Zoom out (−)" aria-label="Zoom out">−</button>
+                <span class="canvas-zoom-label" id="canvas-zoom-label" aria-label="Canvas zoom 100 percent">100%</span>
+                <button type="button" class="btn-canvas-ctrl" id="btn-zoom-in" title="Zoom in (+)" aria-label="Zoom in">+</button>
+                <button type="button" class="btn-canvas-ctrl btn-fit" id="btn-fit-tasks" title="Fit tasks to view (0)" aria-label="Fit tasks to view">Fit</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL DIALOGS                                                     -->
+  <!-- ================================================================= -->
+
+  <!-- Rename Project Modal -->
+  <div class="modal-backdrop" id="modal-rename-project" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="rename-project-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="rename-project-title">Rename Project</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-rename-project" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="form-rename-project">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="input-rename-project">Project name</label>
+            <input type="text" id="input-rename-project" required maxlength="80" autocomplete="off">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal="modal-rename-project">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-project-name">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Project Confirmation Modal -->
+  <div class="modal-backdrop" id="modal-delete-project" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="delete-project-title">
+    <div class="modal-card modal-card-danger">
+      <div class="modal-header">
+        <h3 class="modal-title" id="delete-project-title">Delete Project</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-delete-project" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="dialog-prompt" id="delete-project-prompt">Delete project?</p>
+        <p class="dialog-warning">This will permanently delete the project, its tasks, and comments. Members will lose access.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-delete-project">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-project">Delete Project</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal (Title + Description + Status + Due Date + Assignee + Comments) -->
+  <div class="modal-backdrop" id="modal-edit-task" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="edit-task-title">
+    <div class="modal-card modal-card-task">
+      <div class="modal-header">
+        <h3 class="modal-title" id="edit-task-title">Edit Task</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-edit-task" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body modal-body-scrollable">
+        <div id="task-edit-remote-notice" class="task-edit-notice" style="display: none;" role="alert">
+          Updated elsewhere — your unsaved edits are preserved.
+        </div>
+        <form id="form-edit-task">
+          <div class="form-group">
+            <label for="input-edit-task-title">Title</label>
+            <input type="text" id="input-edit-task-title" required maxlength="200" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="input-edit-task-desc">Description <span class="label-optional">(optional)</span></label>
+            <textarea id="input-edit-task-desc" class="task-edit-textarea" rows="3" maxlength="2000" placeholder="Add context or notes..."></textarea>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="select-edit-task-status">Status</label>
+              <select id="select-edit-task-status">
+                <option value="Todo">Todo</option>
+                <option value="Doing">Doing</option>
+                <option value="Review">Review</option>
+                <option value="Done">Done</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="select-edit-task-assignee">Assignee <span class="label-optional">(optional)</span></label>
+              <select id="select-edit-task-assignee">
+                <option value="">Unassigned</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="input-edit-task-due">Due date <span class="label-optional">(optional)</span></label>
+              <input type="date" id="input-edit-task-due">
+            </div>
+          </div>
+        </form>
+
+        <hr class="modal-section-divider">
+
+        <!-- Task Comments Thread -->
+        <div class="task-comments-section">
+          <div class="comments-section-header">
+            <h4 class="comments-heading">Comments</h4>
+            <span class="comments-count-pill" id="task-comments-count">0</span>
+          </div>
+
+          <div class="task-comments-list" id="task-comments-list" role="list">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="comment-composer-box">
+            <label for="task-comment-input" class="visually-hidden">Write a comment</label>
+            <textarea
+              id="task-comment-input"
+              class="comment-textarea"
+              placeholder="Write a comment... (Ctrl+Enter to post)"
+              rows="2"
+              maxlength="5000"
+            ></textarea>
+            <div class="comment-composer-footer">
+              <span class="composer-shortcut-hint">Press <strong>Ctrl+Enter</strong> to post</span>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-post-comment">Post Comment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-edit-task">Cancel</button>
+        <button type="submit" form="form-edit-task" class="btn btn-primary" id="btn-save-task">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Comment Modal -->
+  <div class="modal-backdrop" id="modal-confirm-delete-comment" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="delete-comment-title">
+    <div class="modal-card modal-card-danger">
+      <div class="modal-header">
+        <h3 class="modal-title" id="delete-comment-title">Delete Comment</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-confirm-delete-comment" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="dialog-prompt" id="delete-comment-prompt">Delete this comment?</p>
+        <p class="dialog-warning">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-confirm-delete-comment">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-comment">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Task Confirmation Modal -->
+  <div class="modal-backdrop" id="modal-delete-task" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="delete-task-title">
+    <div class="modal-card modal-card-danger">
+      <div class="modal-header">
+        <h3 class="modal-title" id="delete-task-title">Delete Task</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-delete-task" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="dialog-prompt" id="delete-task-prompt">Delete task?</p>
+        <p class="dialog-warning">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-delete-task">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-task">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Dependency Modal -->
+  <div class="modal-backdrop" id="modal-delete-dependency" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="delete-dependency-title">
+    <div class="modal-card modal-card-sm modal-card-danger">
+      <div class="modal-header">
+        <h3 class="modal-title" id="delete-dependency-title">Remove Dependency</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-delete-dependency" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="dialog-prompt" id="delete-dependency-prompt">Remove dependency?</p>
+        <p class="dialog-warning" id="delete-dependency-desc">Task B will no longer depend on Task A.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-delete-dependency">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete-dependency">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join Project Modal -->
+  <div class="modal-backdrop" id="modal-join-project" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="join-project-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="join-project-title">Join Project</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-join-project" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="form-join-project">
+        <div class="modal-body">
+          <p class="dialog-prompt">Enter the Join Code shared by the project owner.</p>
+          <div class="form-group">
+            <label for="input-join-code">Join Code</label>
+            <input
+              type="text"
+              id="input-join-code"
+              class="join-code-input"
+              placeholder="XXXX-XXXX"
+              required
+              maxlength="16"
+              autocomplete="off"
+              spellcheck="false"
+            >
+          </div>
+          <div class="form-error-msg" id="join-project-error" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal="modal-join-project">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-join-project">Join Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Project Members Modal -->
+  <div class="modal-backdrop" id="modal-project-members" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="project-members-title">
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <h3 class="modal-title" id="project-members-title">Project Members</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-project-members" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Owner-only Invite / Join Code section -->
+        <div class="members-invite-section" id="members-invite-section" style="display: none;">
+          <h4 class="members-subheading">Invite members</h4>
+          <p class="members-subtext">Anyone with this code and an account can join this project.</p>
+          <div class="join-code-display-wrap">
+            <div class="join-code-box">
+              <span class="join-code-label">Join Code</span>
+              <span class="join-code-value" id="member-modal-join-code">----</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-join-code" title="Copy code to clipboard">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span id="copy-join-code-btn-text">Copy</span>
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-regenerate-code-prompt" title="Regenerate join code">
+              <span>Regenerate Code</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="members-list-section">
+          <h4 class="members-subheading" id="members-list-count-heading">Members</h4>
+          <div class="members-list" id="project-members-list" role="list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-project-members">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Remove Member Modal -->
+  <div class="modal-backdrop" id="modal-confirm-remove-member" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="remove-member-title">
+    <div class="modal-card modal-card-danger">
+      <div class="modal-header">
+        <h3 class="modal-title" id="remove-member-title">Remove Member</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-confirm-remove-member" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="dialog-prompt" id="remove-member-prompt">Remove member?</p>
+        <p class="dialog-warning">They will lose access to this project and their assigned tasks will become unassigned. Their comments will remain.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-confirm-remove-member">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-remove-member">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Regenerate Code Modal -->
+  <div class="modal-backdrop" id="modal-confirm-regenerate-code" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="regenerate-code-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="regenerate-code-title">Regenerate Join Code?</h3>
+        <button type="button" class="modal-close-btn" data-modal="modal-confirm-regenerate-code" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="dialog-prompt">The current code will stop working.</p>
+        <p class="dialog-warning">Existing members will remain in the project.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal="modal-confirm-regenerate-code">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-regenerate-code">Regenerate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Floating Context Menu Container (for sidebar / table rows) -->
+  <div class="dropdown-menu floating-context-menu" id="global-context-menu" role="menu" style="display: none;"></div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Workroom Application Logic -->
+  <script src="/js/workroom.js"></script>
+</body>
+</html>
