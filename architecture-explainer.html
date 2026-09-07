@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workroom Mini — Frontend & Backend Architecture Explainer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M16 20h32v8H16zm0 12h20v8H16zm0 12h28v8H16z' fill='%2338bdf8'/%3E%3Ccircle cx='48' cy='36' r='6' fill='%23fbbf24'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* =====================================================================
+     1. THEME TOKENS & SYSTEM VARIABLES
+     ===================================================================== */
+  :root {
+    --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Light Mode Tokens (Clean Technical Slate & Sky Blueprint) */
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface2: #f1f5f9;
+    --surface3: #e2e8f0;
+    --border: rgba(15, 23, 42, 0.08);
+    --border-bright: rgba(15, 23, 42, 0.16);
+    --text: #0f172a;
+    --text-dim: #475569;
+    --text-muted: #64748b;
+
+    /* Semantic Accents */
+    --accent: #0284c7;        /* Sky Blue - Client & Navigation */
+    --accent-dim: rgba(2, 132, 199, 0.08);
+    --backend: #0d9488;       /* Teal - Flask & Blueprints */
+    --backend-dim: rgba(13, 148, 136, 0.08);
+    --db: #16a34a;            /* Emerald - SQLite & DAL */
+    --db-dim: rgba(22, 163, 74, 0.08);
+    --sync: #d97706;          /* Amber - Revision Polling */
+    --sync-dim: rgba(217, 119, 6, 0.08);
+    --canvas: #7c3aed;        /* Violet - Spatial Canvas */
+    --canvas-dim: rgba(124, 58, 237, 0.08);
+    --danger: #dc2626;        /* Rose/Red - Cascades & Security */
+    --danger-dim: rgba(220, 38, 38, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #090d16;
+      --surface: #111726;
+      --surface-elevated: #161f33;
+      --surface2: #1b263b;
+      --surface3: #24334f;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-bright: rgba(255, 255, 255, 0.15);
+      --text: #f1f5f9;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+
+      --accent: #38bdf8;
+      --accent-dim: rgba(56, 189, 248, 0.12);
+      --backend: #2dd4bf;
+      --backend-dim: rgba(45, 212, 191, 0.12);
+      --db: #34d399;
+      --db-dim: rgba(52, 211, 153, 0.12);
+      --sync: #fbbf24;
+      --sync-dim: rgba(251, 191, 36, 0.12);
+      --canvas: #a78bfa;
+      --canvas-dim: rgba(167, 139, 250, 0.12);
+      --danger: #f87171;
+      --danger-dim: rgba(248, 113, 113, 0.12);
+    }
+  }
+
+  /* Explicit theme overrides when toggled via button */
+  body[data-theme="light"] {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface2: #f1f5f9;
+    --surface3: #e2e8f0;
+    --border: rgba(15, 23, 42, 0.08);
+    --border-bright: rgba(15, 23, 42, 0.16);
+    --text: #0f172a;
+    --text-dim: #475569;
+    --text-muted: #64748b;
+    --accent: #0284c7;
+    --accent-dim: rgba(2, 132, 199, 0.08);
+    --backend: #0d9488;
+    --backend-dim: rgba(13, 148, 136, 0.08);
+    --db: #16a34a;
+    --db-dim: rgba(22, 163, 74, 0.08);
+    --sync: #d97706;
+    --sync-dim: rgba(217, 119, 6, 0.08);
+    --canvas: #7c3aed;
+    --canvas-dim: rgba(124, 58, 237, 0.08);
+    --danger: #dc2626;
+    --danger-dim: rgba(220, 38, 38, 0.08);
+  }
+
+  body[data-theme="dark"] {
+    --bg: #090d16;
+    --surface: #111726;
+    --surface-elevated: #161f33;
+    --surface2: #1b263b;
+    --surface3: #24334f;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-bright: rgba(255, 255, 255, 0.15);
+    --text: #f1f5f9;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #38bdf8;
+    --accent-dim: rgba(56, 189, 248, 0.12);
+    --backend: #2dd4bf;
+    --backend-dim: rgba(45, 212, 191, 0.12);
+    --db: #34d399;
+    --db-dim: rgba(52, 211, 153, 0.12);
+    --sync: #fbbf24;
+    --sync-dim: rgba(251, 191, 36, 0.12);
+    --canvas: #a78bfa;
+    --canvas-dim: rgba(167, 139, 250, 0.12);
+    --danger: #f87171;
+    --danger-dim: rgba(248, 113, 113, 0.12);
+  }
+
+  /* =====================================================================
+     2. BASE & REM TYPE SCALE (Root knob: 16px)
+     ===================================================================== */
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 15%, var(--accent-dim) 0%, transparent 45%),
+      radial-gradient(circle at 85% 75%, var(--backend-dim) 0%, transparent 45%),
+      radial-gradient(circle, var(--border) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 28px 28px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.9375rem; /* 15px */
+    line-height: 1.6;
+    padding: 0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Typographic hierarchy */
+  h1 {
+    font-size: 2.25rem; /* 36px */
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-size: 1.375rem; /* 22px */
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  h3 {
+    font-size: 1rem; /* 16px */
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.375rem;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    color: var(--text-dim);
+  }
+
+  code, pre {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  code {
+    background: var(--surface2);
+    color: var(--accent);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+  }
+  a:hover {
+    color: var(--text);
+  }
+
+  /* Accessibility Focus */
+  button:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* =====================================================================
+     3. SITE NAVIGATION CHROME & HEADER
+     ===================================================================== */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 2rem;
+  }
+
+  .site-header__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .site-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+  }
+
+  .site-logo__icon {
+    width: 28px;
+    height: 28px;
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: color 0.15s ease;
+  }
+  .nav-links a:hover {
+    color: var(--text);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .theme-toggle-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    transition: all 0.15s ease;
+  }
+  .theme-toggle-btn:hover {
+    background: var(--surface3);
+    color: var(--text);
+  }
+
+  /* =====================================================================
+     4. MAIN CONTAINER & HERO BANNER
+     ===================================================================== */
+  .container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem 5rem;
+  }
+
+  .hero-banner {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-lead {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .tech-pill {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.25rem 0.625rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .tech-pill__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* =====================================================================
+     5. MERMAID DIAGRAM CANONICAL SHELL
+     ===================================================================== */
+  .diagram-section {
+    margin-bottom: 4rem;
+  }
+
+  .section-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .section-desc {
+    color: var(--text-dim);
+    max-width: 800px;
+    margin-bottom: 1.25rem;
+  }
+
+  .diagram-shell {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    margin-bottom: 2rem;
+  }
+
+  .diagram-shell__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .diagram-shell__hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .mermaid-wrap {
+    position: relative;
+    background: var(--surface);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 480px;
+    height: 540px;
+    cursor: grab;
+  }
+
+  .mermaid-wrap.is-panning {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  .mermaid-viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .mermaid-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  .zoom-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    z-index: 20;
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 3px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .zoom-controls button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .zoom-controls button:hover {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .zoom-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-dim);
+    padding: 0 8px;
+    min-width: 48px;
+    text-align: center;
+    user-select: none;
+  }
+
+  figcaption {
+    padding: 0.875rem 1.25rem;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  figcaption strong {
+    color: var(--text);
+  }
+
+  /* MERMAID SVG OVERRIDES */
+  .mermaid .nodeLabel {
+    font-family: var(--font-body) !important;
+    font-size: 14px !important;
+    color: var(--text) !important;
+  }
+
+  .mermaid .edgeLabel {
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    color: var(--text-dim) !important;
+    background-color: var(--bg) !important;
+  }
+
+  .mermaid .edgeLabel rect {
+    fill: var(--bg) !important;
+  }
+
+  .mermaid .node rect,
+  .mermaid .node circle,
+  .mermaid .node polygon {
+    stroke-width: 1.5px !important;
+  }
+
+  /* =====================================================================
+     6. CARD & GRID LAYOUT PATTERNS (.ve-card, Depth Tiers)
+     ===================================================================== */
+  .architecture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3.5rem;
+  }
+
+  .ve-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .ve-card:hover {
+    border-color: var(--border-bright);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Depth Tiers */
+  .ve-card--elevated {
+    background: var(--surface-elevated);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  }
+
+  .ve-card--hero {
+    background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+    border-color: color-mix(in srgb, var(--border) 60%, var(--accent) 40%);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .ve-card--recessed {
+    background: var(--surface2);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Color Accents */
+  .ve-card--accent-client { border-top: 3px solid var(--accent); }
+  .ve-card--accent-server { border-top: 3px solid var(--backend); }
+  .ve-card--accent-db     { border-top: 3px solid var(--db); }
+  .ve-card--accent-sync   { border-top: 3px solid var(--sync); }
+  .ve-card--accent-canvas { border-top: 3px solid var(--canvas); }
+
+  .ve-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .ve-card__badge {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge--client { background: var(--accent-dim); color: var(--accent); }
+  .badge--server { background: var(--backend-dim); color: var(--backend); }
+  .badge--db     { background: var(--db-dim); color: var(--db); }
+  .badge--sync   { background: var(--sync-dim); color: var(--sync); }
+  .badge--canvas { background: var(--canvas-dim); color: var(--canvas); }
+
+  .ve-card__title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .ve-card__desc {
+    font-size: 0.875rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .ve-card__list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .ve-card__list-item {
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    line-height: 1.5;
+  }
+
+  .ve-card__list-item::before {
+    content: "•";
+    color: var(--accent);
+    font-weight: bold;
+  }
+
+  /* Inner Mini Cards */
+  .inner-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .inner-cell {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .inner-cell__title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+    font-family: var(--font-mono);
+  }
+
+  .inner-cell__desc {
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* =====================================================================
+     7. REST API SPECIFICATION TABLE
+     ===================================================================== */
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+    margin-bottom: 3.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    text-align: left;
+  }
+
+  th {
+    background: var(--surface2);
+    color: var(--text);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-bright);
+    font-family: var(--font-mono);
+    letter-spacing: 0.02em;
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: var(--surface2);
+  }
+
+  .method-badge {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    display: inline-block;
+    min-width: 52px;
+    text-align: center;
+  }
+
+  .method--get    { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
+  .method--post   { background: rgba(22, 163, 74, 0.12);  color: #16a34a; }
+  .method--patch  { background: rgba(217, 119, 6, 0.12);  color: #d97706; }
+  .method--put    { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
+  .method--delete { background: rgba(220, 38, 38, 0.12);  color: #dc2626; }
+
+  /* =====================================================================
+     8. FOOTER
+     ===================================================================== */
+  .site-footer {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-family: var(--font-mono);
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .site-header__inner { flex-direction: column; align-items: flex-start; }
+    .nav-links { flex-wrap: wrap; gap: 0.75rem; }
+    .architecture-grid { grid-template-columns: 1fr; }
+    .inner-matrix { grid-template-columns: 1fr; }
+    .container { padding: 1.5rem 1rem 3rem; }
+    .mermaid-wrap { height: 400px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- STICKY SITE HEADER -->
+<header class="site-header">
+  <div class="site-header__inner">
+    <a href="#" class="site-logo">
+      <div class="site-logo__icon">📁</div>
+      <span>Workroom Mini Architecture</span>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="#topology">System Topology</a></li>
+        <li><a href="#sync-lifecycle">Revision Sync</a></li>
+        <li><a href="#spatial-engine">Spatial Canvas</a></li>
+        <li><a href="#deep-dive">Module Details</a></li>
+        <li><a href="#api-spec">API Matrix</a></li>
+      </ul>
+    </nav>
+    <div class="header-actions">
+      <button class="theme-toggle-btn" id="theme-btn" title="Toggle Light / Dark Color Scheme">🌓 Theme</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- HERO BANNER -->
+  <section class="hero-banner">
+    <div class="eyebrow">Visual Systems Architecture • v1.0 Production</div>
+    <h1 class="hero-title">Workroom Mini: Frontend-Backend Architecture</h1>
+    <p class="hero-lead">
+      An in-depth visual decomposition of Workroom Mini's educational full-stack design.
+      Engineered with zero frontend frameworks, native ES modules, lightweight revision-based multi-user synchronization,
+      modular Python Flask REST blueprints, and a transactional SQLite data access layer.
+    </p>
+
+    <div class="tech-pills">
+      <span class="tech-pill"><span class="tech-pill__dot" style="background:var(--accent)"></span> Vanilla ES Modules (Zero Build)</span>
+      <span class="tech-pill"><span class="tech-pill__dot" style="background:var(--backend)"></span> Python Flask + Werkzeug</span>
+      <span class="tech-pill"><span class="tech-pill__dot" style="background:var(--db)"></span> SQLite 3 + PRAGMA Foreign Keys</span>
+      <span class="tech-pill"><span class="tech-pill__dot" style="background:var(--sync)"></span> Atomic Revision Polling (5s)</span>
+      <span class="tech-pill"><span class="tech-pill__dot" style="background:var(--canvas)"></span> 2D Spatial Pan/Zoom & SVG Cubic Béziers</span>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- SECTION 1: SYSTEM TOPOLOGY MERMAID DIAGRAM -->
+  <!-- ================================================================= -->
+  <section class="diagram-section" id="topology">
+    <div class="section-header">
+      <h2><span style="color:var(--accent)">01.</span> Complete System Topology & Tier Boundaries</h2>
+      <p class="section-desc">
+        Three distinct architectural tiers: the client browser executing native ES modules with a single canonical state store,
+        the Python Flask application delegating to modular domain Blueprints, and the SQLite persistence layer with atomic revision increments.
+      </p>
+    </div>
+
+    <figure class="diagram-shell" role="img" aria-label="Workroom Mini 3-tier architecture diagram">
+      <div class="diagram-shell__header">
+        <span>FIGURE 1: THREE-TIER COMPONENT GRAPH</span>
+        <div class="diagram-shell__hint">
+          <span>🖱️ Drag to pan • 🔍 Scroll to zoom • ⚡ Double-click to fit</span>
+        </div>
+      </div>
+
+      <div class="mermaid-wrap">
+        <div class="zoom-controls">
+          <button data-action="zoom-in" title="Zoom In">+</button>
+          <button data-action="zoom-out" title="Zoom Out">&minus;</button>
+          <button data-action="zoom-fit" title="Fit to View">Fit</button>
+          <button data-action="zoom-one" title="Reset to 1:1">1:1</button>
+          <button data-action="zoom-expand" title="Open Clean SVG in New Tab">&#x2922;</button>
+          <span class="zoom-label">100%</span>
+        </div>
+        <div class="mermaid-viewport">
+          <div class="mermaid-canvas"></div>
+        </div>
+      </div>
+
+      <pre class="diagram-source" style="display:none;">
+flowchart TD
+  subgraph TIER_FE["🌐 CLIENT TIER — Browser Single Page App (workroom.html)"]
+    subgraph UI_MODES["DOM Presentation Views"]
+      V_KB["Kanban Board View<br/><i>HTML5 Drag-and-Drop Columns</i>"]
+      V_LV["List View<br/><i>Tabular Sorting & Filtered Rows</i>"]
+      V_CV["Spatial Canvas View<br/><i>2D Infinite Transform Plane</i>"]
+      V_MM["Minimap HUD<br/><i>Letterbox Bounds & Viewport Box</i>"]
+      V_MD["Modals & Dialogs<br/><i>Task Edit, Members, Confirmations</i>"]
+    end
+
+    subgraph FE_CODE["Native ES Modules (js/workroom/)"]
+      FE_MAIN["main.js<br/><b>App Lifecycle Bootstrapper</b><br/>Wires hooks, checks /api/me, view router"]
+      FE_CORE["core.js<br/><b>Single Canonical State</b><br/>state tree, api client, toast, modal helpers"]
+      FE_TASK["task.js<br/><b>Task Controller</b><br/>Kanban DnD, comments, draft snapshot"]
+      FE_PROJ["project.js<br/><b>Project Controller</b><br/>CRUD, members roster, join code, exports"]
+      FE_CANV["canvas.js<br/><b>Spatial Math Engine</b><br/>Screen↔World matrix, camera pan/zoom"]
+      FE_GRAPH["canvas-graph.js<br/><b>Dependency DAG</b><br/>SVG Cubic Bézier paths, drag-connect"]
+      FE_SYNC["sync.js<br/><b>Revision Sync Engine</b><br/>5s polling, draft guard, access loss"]
+    end
+  end
+
+  subgraph TIER_BE["⚡ BACKEND TIER — Python Flask REST Application"]
+    BE_SRV["server.py<br/><b>Flask App Factory & Static Server</b><br/>Session cookie, Werkzeug scrypt Auth"]
+
+    subgraph BE_MW["Middleware & Utilities (backend/)"]
+      MW_AUTH["common.py: @login_required<br/><b>Auth Decorator</b><br/>Validates session['user_id'] & DB existence"]
+      MW_VAL["common.py: Validators<br/><b>Input Sanitizers</b><br/>validate_due_date, sanitize_export_slug"]
+    end
+
+    subgraph BE_BP["Domain Blueprints (backend/)"]
+      BP_PROJ["project_api.py (project_bp)<br/><b>Project Domain</b><br/>Dashboard, projects, members, join-code, CSV/JSON"]
+      BP_TASK["task_api.py (task_bp)<br/><b>Task Domain</b><br/>Task CRUD, comments thread, member validation"]
+      BP_CANV["canvas_api.py (canvas_bp)<br/><b>Spatial Canvas Domain</b><br/>Batch coordinates upsert, directed dependencies"]
+    end
+  end
+
+  subgraph TIER_DB["💾 PERSISTENCE TIER — SQLite Data Access Layer"]
+    DB_DAL["database.py<br/><b>Data Access Layer (DAL)</b><br/>PRAGMA foreign_keys = ON, sqlite3.Row<br/>Atomic transactions & Auto-migrations"]
+
+    subgraph DB_TABLES["SQLite Relational Tables (workroom.db)"]
+      T_U["users<br/><i>id, username, password_hash</i>"]
+      T_P["projects<br/><i>id, user_id, name, revision</i>"]
+      T_M["project_members<br/><i>project_id, user_id, joined_at</i>"]
+      T_T["tasks<br/><i>id, project_id, title, status, due_date...</i>"]
+      T_C["task_comments<br/><i>id, task_id, user_id, content</i>"]
+      T_POS["task_canvas_positions<br/><i>task_id, x, y</i>"]
+      T_DEP["task_dependencies<br/><i>from_task_id, to_task_id</i>"]
+    end
+  end
+
+  %% Inter-module orchestration
+  FE_MAIN --> FE_CORE
+  FE_TASK --> FE_CORE
+  FE_PROJ --> FE_CORE
+  FE_CANV --> FE_CORE
+  FE_GRAPH --> FE_CANV
+  FE_SYNC --> FE_CORE
+
+  V_KB -.-> FE_TASK
+  V_LV -.-> FE_TASK
+  V_CV -.-> FE_CANV
+  V_CV -.-> FE_GRAPH
+  V_MM -.-> FE_CANV
+  V_MD -.-> FE_TASK
+  V_MD -.-> FE_PROJ
+
+  %% Client to Backend
+  FE_CORE -->|"HTTP Fetch (JSON + Session Cookie)"| BE_SRV
+  BE_SRV --> BP_PROJ
+  BE_SRV --> BP_TASK
+  BE_SRV --> BP_CANV
+
+  BP_PROJ --> MW_AUTH
+  BP_TASK --> MW_AUTH
+  BP_CANV --> MW_AUTH
+
+  %% Backend to Database
+  BP_PROJ --> DB_DAL
+  BP_TASK --> DB_DAL
+  BP_CANV --> DB_DAL
+
+  DB_DAL --> T_U
+  DB_DAL --> T_P
+  DB_DAL --> T_M
+  DB_DAL --> T_T
+  DB_DAL --> T_C
+  DB_DAL --> T_POS
+  DB_DAL --> T_DEP
+      </pre>
+
+      <figcaption>
+        <strong>Figure 1: Full-Stack Component Topology.</strong>
+        The client browser runs 7 decoupled ES Modules coordinated via extensible hooks in <code>main.js</code>, updating the central <code>state</code> in <code>core.js</code>.
+        Requests transit via HTTP JSON to Flask's modular domain Blueprints protected by <code>@login_required</code>, which execute transactional SQL in <code>database.py</code> against 7 relational SQLite tables.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- SECTION 2: REVISION SYNC MERMAID SEQUENCE -->
+  <!-- ================================================================= -->
+  <section class="diagram-section" id="sync-lifecycle">
+    <div class="section-header">
+      <h2><span style="color:var(--sync)">02.</span> Multi-User Revision Polling & Conflict Prevention</h2>
+      <p class="section-desc">
+        Workroom Mini avoids WebSocket server complexity by using an ultra-lightweight HTTP revision polling protocol.
+        Every mutating database write increments an atomic integer counter on the project row. Peer clients poll this 1-integer endpoint
+        every 5 seconds, employing draft snapshots and gesture guards to never overwrite in-progress user actions.
+      </p>
+    </div>
+
+    <figure class="diagram-shell" role="img" aria-label="Sequence diagram of multi-user sync and revision checking">
+      <div class="diagram-shell__header">
+        <span>FIGURE 2: ATOMIC REVISION SYNCHRONIZATION & DRAFT PROTECTION</span>
+        <div class="diagram-shell__hint">
+          <span>🖱️ Drag to pan • 🔍 Scroll to zoom • ⚡ Double-click to fit</span>
+        </div>
+      </div>
+
+      <div class="mermaid-wrap">
+        <div class="zoom-controls">
+          <button data-action="zoom-in" title="Zoom In">+</button>
+          <button data-action="zoom-out" title="Zoom Out">&minus;</button>
+          <button data-action="zoom-fit" title="Fit to View">Fit</button>
+          <button data-action="zoom-one" title="Reset to 1:1">1:1</button>
+          <button data-action="zoom-expand" title="Open Clean SVG in New Tab">&#x2922;</button>
+          <span class="zoom-label">100%</span>
+        </div>
+        <div class="mermaid-viewport">
+          <div class="mermaid-canvas"></div>
+        </div>
+      </div>
+
+      <pre class="diagram-source" style="display:none;">
+sequenceDiagram
+  autonumber
+  actor UserA as Client A (Active Editor)
+  participant FE_A as Client A (task.js / core.js)
+  participant FlaskAPI as Flask REST API
+  participant DB as SQLite (database.py)
+  actor UserB as Client B (Collaborator)
+  participant FE_B as Client B (sync.js)
+  participant UI_B as Client B DOM
+
+  Note over UserA, UI_B: PHASE 1: User A Mutates State (e.g. Updates Task Status)
+  UserA->>FE_A: Drops task card into "Doing" column
+  FE_A->>FlaskAPI: PATCH /api/tasks/42 { status: "Doing" }
+  FlaskAPI->>DB: Execute UPDATE tasks ... inside transaction
+  DB->>DB: UPDATE projects SET revision = revision + 1 WHERE id = 1
+  DB-->>FlaskAPI: Transaction committed (revision bumped N -> N+1)
+  FlaskAPI-->>FE_A: 200 OK { ok: true, project_revision: N+1 }
+  FE_A->>FE_A: Update state.tasks locally, sync.lastRevision = N+1
+
+  Note over UserB, UI_B: PHASE 2: Client B Polling Loop (Heartbeat every 5s)
+  FE_B->>FlaskAPI: GET /api/projects/1/revision (Lightweight check)
+  FlaskAPI->>DB: SELECT revision, name FROM projects WHERE id = 1
+  DB-->>FlaskAPI: { revision: N+1, name: "Project Alpha" }
+  FlaskAPI-->>FE_B: 200 OK { ok: true, data: { revision: N+1 } }
+
+  Note over FE_B, UI_B: PHASE 3: Client B Conflict Guards & Smart Refresh
+  FE_B->>FE_B: Detect serverRevision (N+1) != lastRevision (N)
+  alt Case 1: User B is actively dragging a card or panning canvas
+    FE_B->>FE_B: Set sync.deferred = true (Postpone DOM update until pointerup)
+  else Case 2: User B has Task Modal open with dirty unsaved edits (isDraftDirty)
+    FE_B->>FE_B: Preserve form field snapshot, defer modal re-render
+  else Case 3: User B is idle or viewing board cleanly
+    FE_B->>FlaskAPI: Parallel GET /api/projects/1/tasks + /members
+    FlaskAPI-->>FE_B: 200 OK { tasks: [...], members: [...] }
+    FE_B->>UI_B: Re-render Kanban / List / Canvas with fresh data
+    FE_B->>FE_B: Set sync.lastRevision = N+1
+  end
+      </pre>
+
+      <figcaption>
+        <strong>Figure 2: Real-time Revision Polling Flow.</strong>
+        Any mutation automatically increments <code>projects.revision</code> in SQLite. Client B periodically polls the lightweight revision endpoint.
+        If a change is detected, Client B checks <code>sync.isDragging</code>, <code>canvas.isPanning</code>, and <code>taskModalSnapshot</code> (dirty form fields).
+        Updates are deferred until user interactions complete, protecting uncommitted drafts from clobbering.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- SECTION 3: SPATIAL CANVAS MERMAID FLOWCHART -->
+  <!-- ================================================================= -->
+  <section class="diagram-section" id="spatial-engine">
+    <div class="section-header">
+      <h2><span style="color:var(--canvas)">03.</span> Spatial Canvas 2D Transform & SVG Edge Pipeline</h2>
+      <p class="section-desc">
+        Workroom Mini features an infinite 2D spatial canvas with camera pan/zoom, interactive node dragging, dynamic surface expansion,
+        directed task dependencies drawn via SVG cubic Bézier curves, and a live interactive minimap.
+      </p>
+    </div>
+
+    <figure class="diagram-shell" role="img" aria-label="Spatial canvas pipeline flowchart">
+      <div class="diagram-shell__header">
+        <span>FIGURE 3: 2D CAMERA MATRIX & HYBRID DOM/SVG PIPELINE</span>
+        <div class="diagram-shell__hint">
+          <span>🖱️ Drag to pan • 🔍 Scroll to zoom • ⚡ Double-click to fit</span>
+        </div>
+      </div>
+
+      <div class="mermaid-wrap">
+        <div class="zoom-controls">
+          <button data-action="zoom-in" title="Zoom In">+</button>
+          <button data-action="zoom-out" title="Zoom Out">&minus;</button>
+          <button data-action="zoom-fit" title="Fit to View">Fit</button>
+          <button data-action="zoom-one" title="Reset to 1:1">1:1</button>
+          <button data-action="zoom-expand" title="Open Clean SVG in New Tab">&#x2922;</button>
+          <span class="zoom-label">100%</span>
+        </div>
+        <div class="mermaid-viewport">
+          <div class="mermaid-canvas"></div>
+        </div>
+      </div>
+
+      <pre class="diagram-source" style="display:none;">
+flowchart LR
+  subgraph INPUT_STREAM["1. Viewport User Gestures"]
+    P_DOWN["Pointer Down / Move<br/><code>screenX, screenY</code>"]
+    WHEEL["Mouse Wheel / Trackpad<br/><code>deltaY (zoom) / deltaX (pan)</code>"]
+    SPACE["Space + Drag / Middle Click<br/><code>Camera Translation dx, dy</code>"]
+  end
+
+  subgraph MATRIX_ENGINE["2. Camera Transformation Engine (canvas.js)"]
+    CAM_STATE["Camera State Vector<br/><code>{ panX, panY, zoom (0.5x - 2.0x) }</code>"]
+    MATH_S2W["Screen-to-World Projection<br/><code>worldX = (screenX - left - panX) / zoom</code><br/><code>worldY = (screenY - top - panY) / zoom</code>"]
+    DRAG_THRESH["4px Drag vs Click Threshold<br/>Distinguishes card opening from position repositioning"]
+  end
+
+  subgraph DUAL_RENDER["3. Hybrid Viewport Layers (#canvas-viewport)"]
+    WORLD_LAYER["World Container (#canvas-world)<br/><code>CSS transform: translate(panX, panY) scale(zoom)</code>"]
+    
+    subgraph HTML_NODES["HTML Task Cards (.canvas-task-node)"]
+      TASK_CARDS["Interactive DOM Nodes<br/>• Left/Top positioned at worldX, worldY<br/>• Status pill, priority, assignee badge<br/>• Drag-connect socket handle"]
+    end
+
+    subgraph SVG_OVERLAY["SVG Edge Layer (#canvas-edges)"]
+      BEZIER_EDGES["SVG Cubic Bézier Paths (<path>)<br/><code>M x1 y1 C cx1 cy1, cx2 cy2, x2 y2</code><br/>• Real-time edge updates during card drag<br/>• Directed arrowheads & click-to-delete"]
+    end
+  end
+
+  subgraph HUD_LAYER["4. Spatial HUD & Minimap (#canvas-minimap)"]
+    MM_BOUNDS["Bounding Box Math<br/>Calculates min/max world bounds of all nodes"]
+    MM_CANVAS["Minimap Canvas<br/>Draws proportional node dots letterboxed"]
+    MM_FRUSTUM["Camera Viewport Box<br/>Draggable viewport indicator rectangle"]
+  end
+
+  subgraph PERSIST_LAYER["5. Backend Persistence (canvas_api.py)"]
+    DEBOUNCE_PUT["PUT /api/projects/:id/canvas-positions<br/>Batch upsert { positions: [...] }<br/>Increments revision +1"]
+  end
+
+  P_DOWN --> MATH_S2W
+  WHEEL --> CAM_STATE
+  SPACE --> CAM_STATE
+  CAM_STATE --> MATH_S2W
+  MATH_S2W --> DRAG_THRESH
+  DRAG_THRESH --> WORLD_LAYER
+  WORLD_LAYER --> TASK_CARDS
+  TASK_CARDS -.->|"Node centers (x, y)"| BEZIER_EDGES
+  TASK_CARDS -.->|"Calculates outer bounds"| MM_BOUNDS
+  CAM_STATE -.->|"Current visible screen box"| MM_FRUSTUM
+  MM_BOUNDS --> MM_CANVAS
+  DRAG_THRESH -->|"Pointer Up (End of Drag)"| DEBOUNCE_PUT
+      </pre>
+
+      <figcaption>
+        <strong>Figure 3: 2D Spatial Engine & Coordinate Pipeline.</strong>
+        User input is transformed from screen pixels to 2D world coordinates using the camera matrix. The world layer utilizes native hardware-accelerated CSS transforms.
+        Task cards exist as styled HTML DOM nodes, while dependency arrows are rendered as cubic Bézier curves on an SVG overlay.
+        The Minimap projects the bounding box of all nodes and provides a draggable viewport box for rapid navigation.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- SECTION 4: DEEP ARCHITECTURAL BREAKDOWN CARDS -->
+  <!-- ================================================================= -->
+  <section class="diagram-section" id="deep-dive">
+    <div class="section-header">
+      <h2><span style="color:var(--backend)">04.</span> Architectural Modules & Design Decisions</h2>
+      <p class="section-desc">
+        Detailed analysis of the 6 pillars powering Workroom Mini's separation of concerns, data integrity, and user experience.
+      </p>
+    </div>
+
+    <div class="architecture-grid">
+
+      <!-- CARD 1: FRONTEND ES MODULES -->
+      <article class="ve-card ve-card--elevated ve-card--accent-client">
+        <div class="ve-card__header">
+          <span class="ve-card__badge badge--client">Frontend Architecture</span>
+          <code>/js/workroom/</code>
+        </div>
+        <h3 class="ve-card__title">Vanilla ES Modules & Canonical State</h3>
+        <p class="ve-card__desc">
+          Built without bundlers, Webpack, Babel, or heavy client frameworks. Native ES Modules deliver instant loading with zero compilation overhead.
+        </p>
+        <ul class="ve-card__list">
+          <li class="ve-card__list-item"><strong><code>core.js</code>:</strong> Houses the single source of truth (<code>state</code> tree), HTTP client (<code>api</code>), toast notifications, and modal lifecycle manager.</li>
+          <li class="ve-card__list-item"><strong><code>main.js</code>:</strong> Bootstraps application lifecycle (<code>initApp</code>), validates session profile (<code>/api/me</code>), and wires decoupled hooks without circular imports.</li>
+          <li class="ve-card__list-item"><strong><code>task.js</code>:</strong> Handles Kanban board HTML5 Drag-and-Drop, List view sorting, and the Task Detail Modal with real-time comment threads.</li>
+          <li class="ve-card__list-item"><strong><code>project.js</code>:</strong> Powers project switching, member collaboration roster, join code regeneration, CSV/JSON exports, and dashboard metrics.</li>
+        </ul>
+      </article>
+
+      <!-- CARD 2: FLASK BLUEPRINTS -->
+      <article class="ve-card ve-card--elevated ve-card--accent-server">
+        <div class="ve-card__header">
+          <span class="ve-card__badge badge--server">Backend Architecture</span>
+          <code>/backend/</code>
+        </div>
+        <h3 class="ve-card__title">Flask Domain Blueprints & Auth</h3>
+        <p class="ve-card__desc">
+          Clean separation of server responsibilities into domain-driven Blueprints, preventing monolithic route sprawl.
+        </p>
+        <ul class="ve-card__list">
+          <li class="ve-card__list-item"><strong><code>server.py</code>:</strong> Root app factory configuring secure sessions (<code>HttpOnly</code>, <code>SameSite=Lax</code>), static routing, and Werkzeug scrypt auth (<code>/api/signup</code>, <code>/api/login</code>).</li>
+          <li class="ve-card__list-item"><strong><code>backend/common.py</code>:</strong> The <code>@login_required</code> decorator guarantees session validity and verifies user existence in SQLite on every protected request.</li>
+          <li class="ve-card__list-item"><strong><code>backend/project_api.py</code>:</strong> Manages project CRUD, join code validation, member removal, dashboard rollups, and UTF-8 BOM CSV exports.</li>
+          <li class="ve-card__list-item"><strong><code>backend/task_api.py</code>:</strong> Enforces task CRUD validation, assignee roster verification, and task discussion comments.</li>
+          <li class="ve-card__list-item"><strong><code>backend/canvas_api.py</code>:</strong> Transactional batch position upserts and directed task dependency graph persistence.</li>
+        </ul>
+      </article>
+
+      <!-- CARD 3: DATABASE DAL & REVISION PATTERN -->
+      <article class="ve-card ve-card--elevated ve-card--accent-db">
+        <div class="ve-card__header">
+          <span class="ve-card__badge badge--db">Persistence & DAL</span>
+          <code>database.py</code>
+        </div>
+        <h3 class="ve-card__title">SQLite DAL & Atomic Revision Pattern</h3>
+        <p class="ve-card__desc">
+          A dedicated Data Access Layer using raw SQL. No ORM abstraction layer to ensure complete query transparency and optimal performance.
+        </p>
+        <ul class="ve-card__list">
+          <li class="ve-card__list-item"><strong>Foreign Key Cascades:</strong> Enforces <code>PRAGMA foreign_keys = ON;</code> so deleting a project instantly cascades to tasks, comments, positions, and dependencies.</li>
+          <li class="ve-card__list-item"><strong>Safe Startup Migrations:</strong> Inspects schema columns via <code>PRAGMA table_info</code> on launch, running non-destructive <code>ALTER TABLE</code> when needed.</li>
+          <li class="ve-card__list-item"><strong>Atomic Revision Counter:</strong> Every data mutation increments <code>projects.revision</code> by 1 inside the same database transaction. This powers 1-integer O(1) polling checks!</li>
+          <li class="ve-card__list-item"><strong>7 Core Tables:</strong> <code>users</code>, <code>projects</code>, <code>project_members</code>, <code>tasks</code>, <code>task_comments</code>, <code>task_canvas_positions</code>, <code>task_dependencies</code>.</li>
+        </ul>
+      </article>
+
+      <!-- CARD 4: REVISION SYNC & DRAFT PROTECTION -->
+      <article class="ve-card ve-card--elevated ve-card--accent-sync">
+        <div class="ve-card__header">
+          <span class="ve-card__badge badge--sync">Real-Time Sync</span>
+          <code>/js/workroom/sync.js</code>
+        </div>
+        <h3 class="ve-card__title">Zero-Overhead Polling & Draft Guard</h3>
+        <p class="ve-card__desc">
+          Solves multi-user collaboration without the operational complexity of stateful WebSockets or external message brokers.
+        </p>
+        <div class="inner-matrix">
+          <div class="inner-cell">
+            <div class="inner-cell__title">5-Second Polling Loop</div>
+            <div class="inner-cell__desc">Uses chained <code>setTimeout</code> instead of <code>setInterval</code> to guarantee requests never overlap on high-latency networks.</div>
+          </div>
+          <div class="inner-cell">
+            <div class="inner-cell__title">Gesture Guard</div>
+            <div class="inner-cell__desc">Defers DOM re-renders if <code>sync.isDragging</code>, <code>canvas.isPanning</code>, or <code>canvas.isConnecting</code> is active.</div>
+          </div>
+          <div class="inner-cell">
+            <div class="inner-cell__title">Draft Protection</div>
+            <div class="inner-cell__desc">Compares active modal inputs against <code>taskModalSnapshot</code>; defers background refresh if the user is typing.</div>
+          </div>
+          <div class="inner-cell">
+            <div class="inner-cell__title">Tab Visibility Aware</div>
+            <div class="inner-cell__desc">Listens to <code>document.visibilityState</code> and halts polling when the tab is hidden, eliminating battery and server drain.</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- CARD 5: SPATIAL CANVAS ENGINE -->
+      <article class="ve-card ve-card--elevated ve-card--accent-canvas">
+        <div class="ve-card__header">
+          <span class="ve-card__badge badge--canvas">Spatial Math</span>
+          <code>/js/workroom/canvas.js</code>
+        </div>
+        <h3 class="ve-card__title">2D Camera Matrix & SVG Bézier DAG</h3>
+        <p class="ve-card__desc">
+          Enables an expansive spatial layout with fluid interactions, coordinate math, and dynamic graph edges.
+        </p>
+        <ul class="ve-card__list">
+          <li class="ve-card__list-item"><strong>Focal Zoom Math:</strong> Wheel zooming anchors to the cursor's world coordinate, updating <code>panX</code> and <code>panY</code> so points under the cursor remain stationary.</li>
+          <li class="ve-card__list-item"><strong>Cubic Bézier Curves:</strong> Evaluates socket handles on predecessor and successor nodes, rendering paths with <code>d="M x1 y1 C cx1 cy1, cx2 cy2, x2 y2"</code>.</li>
+          <li class="ve-card__list-item"><strong>Interactive Minimap:</strong> Computes aspect-ratio letterboxing, projects all task positions as color-coded dots, and renders a draggable camera frustum box.</li>
+          <li class="ve-card__list-item"><strong>Auto-placement:</strong> Tasks without positions are automatically placed in a clean grid and batch-saved to SQLite via <code>PUT /api/.../canvas-positions</code>.</li>
+        </ul>
+      </article>
+
+      <!-- CARD 6: SECURITY & AUTHORIZATION -->
+      <article class="ve-card ve-card--elevated ve-card--accent-client">
+        <div class="ve-card__header">
+          <span class="ve-card__badge badge--client">Security Baseline</span>
+          <code>Authorization & Access</code>
+        </div>
+        <h3 class="ve-card__title">IDOR Prevention & Multi-Tier Roles</h3>
+        <p class="ve-card__desc">
+          Comprehensive defense-in-depth security model protecting every API route and database query.
+        </p>
+        <ul class="ve-card__list">
+          <li class="ve-card__list-item"><strong>Triple-Tier Roles:</strong> Explicit distinction between <code>Owner</code> (can rename, delete project, manage members), <code>Member</code> (can edit tasks, comments, canvas), and <code>Outsider</code> (403/404).</li>
+          <li class="ve-card__list-item"><strong>IDOR Prevention:</strong> Every task mutation checks that the task belongs to a project the session user is authorized to access.</li>
+          <li class="ve-card__list-item"><strong>Member Removal Cleanup:</strong> Removing a member automatically updates any assigned tasks to <code>assignee_id = NULL</code>, preventing orphaned references.</li>
+          <li class="ve-card__list-item"><strong>Header Injection Protection:</strong> Project CSV export slugs are sanitized using regex to prevent directory traversal and header injection in <code>Content-Disposition</code>.</li>
+        </ul>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- SECTION 5: REST API SPECIFICATION TABLE -->
+  <!-- ================================================================= -->
+  <section class="diagram-section" id="api-spec">
+    <div class="section-header">
+      <h2><span style="color:var(--accent)">05.</span> Complete REST API & HTTP Contract Matrix</h2>
+      <p class="section-desc">
+        Detailed breakdown of all API endpoints across Authentication, Project, Task, and Spatial Canvas domains.
+      </p>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Domain Blueprint</th>
+            <th>Access Control</th>
+            <th>Revision Bump</th>
+            <th>Description & Contract</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/signup</code></td>
+            <td><code>server.py</code></td>
+            <td>Public</td>
+            <td>No</td>
+            <td>Creates user account with Werkzeug scrypt hashing; sets session cookie.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/login</code></td>
+            <td><code>server.py</code></td>
+            <td>Public</td>
+            <td>No</td>
+            <td>Verifies password hash; issues secure <code>HttpOnly</code> session cookie.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/logout</code></td>
+            <td><code>server.py</code></td>
+            <td>Authenticated</td>
+            <td>No</td>
+            <td>Clears active session cookie.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/me</code></td>
+            <td><code>server.py</code></td>
+            <td><code>@login_required</code></td>
+            <td>No</td>
+            <td>Returns authenticated user ID and username.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/dashboard</code></td>
+            <td><code>project_api.py</code></td>
+            <td><code>@login_required</code></td>
+            <td>No</td>
+            <td>Aggregates project stats, active tasks, and urgent deadlines for user.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects</code></td>
+            <td><code>project_api.py</code></td>
+            <td><code>@login_required</code></td>
+            <td>No</td>
+            <td>Lists all projects owned or collaborated on by the current user.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/projects</code></td>
+            <td><code>project_api.py</code></td>
+            <td><code>@login_required</code></td>
+            <td>Initial (0)</td>
+            <td>Creates a new project owned by current user; generates unique join code.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--patch">PATCH</span></td>
+            <td><code>/api/projects/:id</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner Only</td>
+            <td>Yes (+1)</td>
+            <td>Renames project; increments project revision.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--delete">DELETE</span></td>
+            <td><code>/api/projects/:id</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner Only</td>
+            <td>N/A (Cascade)</td>
+            <td>Deletes project and cascades deletion to all tasks, comments, and positions.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects/:id/revision</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Lightweight polling heartbeat returning <code>{ revision, name, relationship }</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/projects/join</code></td>
+            <td><code>project_api.py</code></td>
+            <td><code>@login_required</code></td>
+            <td>Yes (+1)</td>
+            <td>Adds current user to project via 8-character join code (XXXX-XXXX format).</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects/:id/members</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Returns list of project participants; includes join code if Owner.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/projects/:id/join-code/regenerate</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner Only</td>
+            <td>Yes (+1)</td>
+            <td>Generates a new secure join code and invalidates the old code.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--delete">DELETE</span></td>
+            <td><code>/api/projects/:id/members/:uid</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner Only</td>
+            <td>Yes (+1)</td>
+            <td>Removes collaborator and reassigns their active tasks to unassigned (NULL).</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects/:id/export.csv</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Exports project tasks as UTF-8 CSV with BOM for Excel compatibility.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects/:id/export.json</code></td>
+            <td><code>project_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Exports full project snapshot: metadata, tasks, members, canvas, dependencies.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects/:id/tasks</code></td>
+            <td><code>task_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Returns all tasks in project with comment counts and assignee usernames.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/projects/:id/tasks</code></td>
+            <td><code>task_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>Yes (+1)</td>
+            <td>Creates a new task; validates assignee against project participant roster.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--patch">PATCH</span></td>
+            <td><code>/api/tasks/:id</code></td>
+            <td><code>task_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>Yes (+1)</td>
+            <td>Partially updates task title, description, status, due date, or assignee.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--delete">DELETE</span></td>
+            <td><code>/api/tasks/:id</code></td>
+            <td><code>task_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>Yes (+1)</td>
+            <td>Deletes task and cascades deletion of its comments and canvas positions.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/tasks/:id/comments</code></td>
+            <td><code>task_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Lists all plain-text discussion comments for a task.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/tasks/:id/comments</code></td>
+            <td><code>task_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>Yes (+1)</td>
+            <td>Adds comment from current user; bumps project revision.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--delete">DELETE</span></td>
+            <td><code>/api/tasks/:id/comments/:cid</code></td>
+            <td><code>task_api.py</code></td>
+            <td>Author / Owner</td>
+            <td>Yes (+1)</td>
+            <td>Deletes comment; bumps project revision.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects/:id/canvas-positions</code></td>
+            <td><code>canvas_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Fetches saved 2D spatial coordinates (x, y) for project task nodes.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--put">PUT</span></td>
+            <td><code>/api/projects/:id/canvas-positions</code></td>
+            <td><code>canvas_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>Yes (+1)</td>
+            <td>Batch upserts task coordinates in a single transactional write.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--get">GET</span></td>
+            <td><code>/api/projects/:id/dependencies</code></td>
+            <td><code>canvas_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>No</td>
+            <td>Lists all directed task dependencies <code>(from_task_id -> to_task_id)</code>.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--post">POST</span></td>
+            <td><code>/api/projects/:id/dependencies</code></td>
+            <td><code>canvas_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>Yes (+1)</td>
+            <td>Creates directed edge; validates no self-links, no duplicates, and same project.</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge method--delete">DELETE</span></td>
+            <td><code>/api/projects/:id/dependencies</code></td>
+            <td><code>canvas_api.py</code></td>
+            <td>Owner / Member</td>
+            <td>Yes (+1)</td>
+            <td>Removes directed dependency edge; bumps project revision.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Workroom Mini Visual Architecture Specification • Generated with visual-explainer skill</p>
+  <p style="margin-top:0.375rem;opacity:0.7">Clean Separation of Concerns • Vanilla Framework-Free Educational Fullstack</p>
+</footer>
+
+<!-- =====================================================================
+     MERMAID ENGINE & ZOOM/PAN INTERACTIVITY SCRIPT
+     ===================================================================== -->
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  // Config matching visual-explainer design system
+  const config = {
+    fitPadding: 24,
+    minHeight: 380,
+    maxHeightPx: 800,
+    maxHeightVh: 0.85,
+    minZoom: 0.1,
+    maxZoom: 5.0,
+    zoomStep: 0.15
+  };
+
+  const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+  // Determine theme mode
+  function getIsDark() {
+    const override = document.body.getAttribute('data-theme');
+    if (override === 'dark') return true;
+    if (override === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function initMermaidTheme() {
+    const isDark = getIsDark();
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      look: 'classic',
+      themeVariables: {
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+        fontSize: '14px',
+        primaryColor: isDark ? '#162235' : '#f0f9ff',
+        primaryBorderColor: isDark ? '#38bdf8' : '#0284c7',
+        primaryTextColor: isDark ? '#f1f5f9' : '#0f172a',
+        secondaryColor: isDark ? '#132e2b' : '#f0fdf4',
+        secondaryBorderColor: isDark ? '#2dd4bf' : '#0d9488',
+        secondaryTextColor: isDark ? '#f1f5f9' : '#0f172a',
+        tertiaryColor: isDark ? '#2e2618' : '#fffbeb',
+        tertiaryBorderColor: isDark ? '#fbbf24' : '#d97706',
+        tertiaryTextColor: isDark ? '#f1f5f9' : '#0f172a',
+        lineColor: isDark ? '#64748b' : '#94a3b8',
+        noteBkgColor: isDark ? '#1e293b' : '#fefce8',
+        noteTextColor: isDark ? '#f1f5f9' : '#0f172a',
+        noteBorderColor: isDark ? '#fbbf24' : '#d97706',
+      }
+    });
+  }
+
+  initMermaidTheme();
+
+  const rerenderers = [];
+  let activeDrag = null;
+
+  window.addEventListener('mousemove', (e) => activeDrag?.onMove(e));
+  window.addEventListener('mouseup', () => {
+    activeDrag?.onEnd();
+    activeDrag = null;
+  });
+
+  function initDiagram(shell) {
+    const wrap = shell.querySelector('.mermaid-wrap');
+    const viewport = shell.querySelector('.mermaid-viewport');
+    const canvas = shell.querySelector('.mermaid-canvas');
+    const source = shell.querySelector('.diagram-source');
+    const label = shell.querySelector('.zoom-label');
+
+    if (!wrap || !viewport || !canvas || !source || !label) return;
+
+    let zoom = 1;
+    let panX = 0;
+    let panY = 0;
+    let svgW = 0;
+    let svgH = 0;
+
+    function applyTransform() {
+      canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+      label.textContent = `${Math.round(zoom * 100)}%`;
+    }
+
+    function computeFit() {
+      if (!svgW || !svgH) return 1;
+      const vpW = viewport.clientWidth - config.fitPadding * 2;
+      const vpH = viewport.clientHeight - config.fitPadding * 2;
+      const scaleX = vpW / svgW;
+      const scaleY = vpH / svgH;
+      return clamp(Math.min(scaleX, scaleY), config.minZoom, 1.2);
+    }
+
+    function fitDiagram() {
+      if (!svgW) return;
+      zoom = computeFit();
+      panX = (viewport.clientWidth - svgW * zoom) / 2;
+      panY = (viewport.clientHeight - svgH * zoom) / 2;
+      applyTransform();
+    }
+
+    function setOneToOne() {
+      zoom = 1;
+      panX = (viewport.clientWidth - svgW) / 2;
+      panY = (viewport.clientHeight - svgH) / 2;
+      applyTransform();
+    }
+
+    function zoomAround(factor, cx, cy) {
+      const next = clamp(zoom * factor, config.minZoom, config.maxZoom);
+      const ratio = next / zoom;
+      panX = cx - ratio * (cx - panX);
+      panY = cy - ratio * (cy - panY);
+      zoom = next;
+      applyTransform();
+    }
+
+    function readSvgNaturalSize(svg) {
+      let w = 0, h = 0;
+      if (svg.viewBox?.baseVal?.width > 0) {
+        w = svg.viewBox.baseVal.width;
+        h = svg.viewBox.baseVal.height;
+      }
+      if (!w) {
+        w = parseFloat(svg.getAttribute('width')) || 0;
+        h = parseFloat(svg.getAttribute('height')) || 0;
+      }
+      if (!w) {
+        const b = svg.getBBox();
+        w = b.width;
+        h = b.height;
+      }
+      if (!w) {
+        const r = svg.getBoundingClientRect();
+        w = r.width || 1000;
+        h = r.height || 600;
+      }
+      if (!svg.getAttribute('viewBox')) {
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      }
+      return { w, h };
+    }
+
+    function openInNewTab() {
+      const svg = canvas.querySelector('svg');
+      if (!svg) return;
+      const clone = svg.cloneNode(true);
+      clone.style.width = '100%';
+      clone.style.height = 'auto';
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b0f19';
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Diagram Export</title>
+      <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:${bg};padding:30px;box-sizing:border-box;}svg{max-width:100%;max-height:90vh}</style>
+      </head><body>${clone.outerHTML}</body></html>`;
+      window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank');
+    }
+
+    async function render() {
+      try {
+        const code = source.textContent.trim();
+        if (!code) return;
+        const id = 'diagram-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+        const { svg } = await mermaid.render(id, code);
+        const parsed = new DOMParser().parseFromString(svg, 'text/html');
+        const parsedSvg = parsed.body.querySelector('svg');
+        if (!parsedSvg) return;
+
+        canvas.replaceChildren(document.adoptNode(parsedSvg));
+        const svgNode = canvas.querySelector('svg');
+        if (!svgNode) return;
+
+        const size = readSvgNaturalSize(svgNode);
+        svgW = size.w;
+        svgH = size.h;
+
+        svgNode.removeAttribute('width');
+        svgNode.removeAttribute('height');
+        svgNode.style.maxWidth = 'none';
+        svgNode.style.display = 'block';
+
+        fitDiagram();
+      } catch (err) {
+        console.error('Mermaid render error:', err);
+        label.textContent = 'Render Error';
+      }
+    }
+
+    // Action button listeners
+    const actions = {
+      'zoom-in': () => zoomAround(1 + config.zoomStep, viewport.clientWidth / 2, viewport.clientHeight / 2),
+      'zoom-out': () => zoomAround(1 / (1 + config.zoomStep), viewport.clientWidth / 2, viewport.clientHeight / 2),
+      'zoom-fit': fitDiagram,
+      'zoom-one': setOneToOne,
+      'zoom-expand': openInNewTab
+    };
+
+    Object.entries(actions).forEach(([action, handler]) => {
+      wrap.querySelector(`[data-action="${action}"]`)?.addEventListener('click', handler);
+    });
+
+    viewport.addEventListener('dblclick', fitDiagram);
+
+    viewport.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const rect = viewport.getBoundingClientRect();
+        const factor = e.deltaY < 0 ? 1 + config.zoomStep : 1 / (1 + config.zoomStep);
+        zoomAround(factor, e.clientX - rect.left, e.clientY - rect.top);
+        return;
+      }
+      e.preventDefault();
+      panX -= e.deltaX;
+      panY -= e.deltaY;
+      applyTransform();
+    }, { passive: false });
+
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.zoom-controls')) return;
+      wrap.classList.add('is-panning');
+      const sx = e.clientX;
+      const sy = e.clientY;
+      const spx = panX;
+      const spy = panY;
+      e.preventDefault();
+
+      activeDrag = {
+        onMove: (ev) => {
+          panX = spx + (ev.clientX - sx);
+          panY = spy + (ev.clientY - sy);
+          applyTransform();
+        },
+        onEnd: () => {
+          wrap.classList.remove('is-panning');
+        }
+      };
+    });
+
+    new ResizeObserver(() => {
+      if (svgW) fitDiagram();
+    }).observe(wrap);
+
+    rerenderers.push(render);
+    render();
+  }
+
+  document.querySelectorAll('.diagram-shell').forEach(initDiagram);
+
+  // Theme Toggle Button Logic
+  const themeBtn = document.getElementById('theme-btn');
+  themeBtn?.addEventListener('click', async () => {
+    const isDark = getIsDark();
+    document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    initMermaidTheme();
+    await Promise.all(rerenderers.map(r => r()));
+  });
+</script>
+
+</body>
+</html>
