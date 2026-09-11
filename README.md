@@ -179,3 +179,5 @@ POST /api/projects/<id>/dependencies (task_id, depends_on_task_id)
    - Revision polling định kỳ (3 giây) cực kỳ nhẹ, không gây quá tải server.
    - Cơ chế bảo vệ form đang nhập: Tránh ghi đè khi người dùng đang sửa task hoặc viết bình luận.
    - Tự động tạm dừng polling khi tab trình duyệt ở trạng thái ẩn (`document.hidden`).
+
+CD test
