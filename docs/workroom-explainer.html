@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Workroom MVP - Architecture & Spatial Visual Explainer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318181b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='7' height='7' x='3' y='3' rx='1'/><rect width='7' height='7' x='14' y='3' rx='1'/><rect width='7' height='7' x='14' y='14' rx='1'/><rect width='7' height='7' x='3' y='14' rx='1'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --bg-page: #F8F9FA;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F4F4F5;
+      --border-main: #E4E4E7;
+      --border-subtle: #EEEEF0;
+      --text-main: #18181B;
+      --text-muted: #71717A;
+      --text-faint: #A1A1AA;
+      --accent-ink: #09090B;
+      --accent-indigo: #4F46E5;
+      --accent-emerald: #10B981;
+      --accent-amber: #D97706;
+      --accent-rose: #E11D48;
+      --accent-sky: #0284C7;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+    }
+
+    /* Dot grid background for spatial feel */
+    .bg-grid {
+      background-image: radial-gradient(var(--border-main) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Top Nav Bar */
+    header.top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.85);
+      border-bottom: 1px solid var(--border-main);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      font-weight: 500;
+      background: #F4F4F5;
+      border: 1px solid var(--border-main);
+      color: var(--text-muted);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    nav.nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    nav.nav-links a {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+
+    nav.nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      border-color: var(--border-main);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-subtle);
+    }
+
+    .btn-primary {
+      background: var(--accent-ink);
+      color: #FFF;
+    }
+
+    .btn-primary:hover {
+      background: #27272A;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero Section */
+    section.hero {
+      padding: 64px 0 40px;
+      text-align: left;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-indigo);
+      margin-bottom: 12px;
+    }
+
+    .hero-title {
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--accent-ink);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 780px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+    }
+
+    /* Section Cards */
+    .section-wrap {
+      margin-top: 56px;
+    }
+
+    .section-header {
+      margin-bottom: 20px;
+    }
+
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-indigo);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--accent-ink);
+      margin-bottom: 6px;
+    }
+
+    .section-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 800px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      nav.nav-links {
+        display: none;
+      }
+    }
+
+    /* Diagram Shell Standard */
+    .diagram-shell {
+      position: relative;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin: 20px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .diagram-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #FAFAFA;
+      border-bottom: 1px solid var(--border-main);
+    }
+
+    .diagram-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .diagram-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ctrl-btn {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+    }
+
+    .ctrl-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    .diagram-viewport {
+      overflow: auto;
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 280px;
+      background: radial-gradient(#E4E4E7 1px, transparent 1px);
+      background-size: 20px 20px;
+      background-color: #FDFCFC;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .diagram-viewport:active {
+      cursor: grabbing;
+    }
+
+    .diagram-viewport .mermaid {
+      transform-origin: center center;
+      transition: transform 0.1s ease-out;
+      width: 100%;
+      text-align: center;
+    }
+
+    /* Interactive Simulator */
+    .sandbox-container {
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .sandbox-toolbar {
+      padding: 12px 20px;
+      background: #F9FAFB;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .sandbox-status {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-pill.inside {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+
+    .status-pill.outside {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    .sandbox-canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      background-color: #F8F9FA;
+      background-image: radial-gradient(#D4D4D8 1px, transparent 1px);
+      background-size: 24px 24px;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* Draggable simulator elements */
+    .sim-epic-frame {
+      position: absolute;
+      border-radius: 12px;
+      border: 1.5px dashed #4F46E5;
+      background: rgba(79, 70, 229, 0.03);
+      pointer-events: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .sim-epic-header {
+      position: absolute;
+      top: -14px;
+      left: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 6px;
+      background: #FFFFFF;
+      border: 1px solid #C7D2FE;
+      font-size: 12px;
+      font-weight: 600;
+      color: #3730A3;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .sim-task-card {
+      position: absolute;
+      width: 240px;
+      height: 100px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      cursor: grab;
+      user-select: none;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 10;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .sim-task-card:active {
+      cursor: grabbing;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      border-color: #A1A1AA;
+    }
+
+    .sim-task-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .sim-task-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sim-port {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4F46E5;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 0 0 1px #818CF8;
+      top: 45px;
+    }
+
+    .sim-port.port-right {
+      right: -5px;
+    }
+
+    .sim-port.port-left {
+      left: -5px;
+      background: #10B981;
+      box-shadow: 0 0 0 1px #34D399;
+    }
+
+    /* Fixed Target Task for Bezier connector demo */
+    .sim-target-task {
+      position: absolute;
+      width: 220px;
+      height: 90px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 12px 14px;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Tables & Schemas */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-md);
+      background: #FFFFFF;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    table.data-table th {
+      background: #F9FAFB;
+      padding: 10px 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-main);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    table.data-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    table.data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .code-chip {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: #F4F4F5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #09090B;
+      border: 1px solid #E4E4E7;
+    }
+
+    .pk-chip {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      background: #EEF2FF;
+      color: #4F46E5;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid #C7D2FE;
+    }
+
+    .fk-chip {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      background: #F0FDF4;
+      color: #16A34A;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid #BBF7D0;
+    }
+
+    /* Tabs Component */
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--border-main);
+      margin-bottom: 16px;
+      padding-bottom: 2px;
+    }
+
+    .tab-btn {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-subtle);
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Comparison Box */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .comparison-card {
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      border: 1px solid var(--border-main);
+    }
+
+    .comparison-card.bad {
+      background: #FFFBFB;
+      border-color: #FECDD3;
+    }
+
+    .comparison-card.good {
+      background: #FBFDFB;
+      border-color: #BBF7D0;
+    }
+
+    .comparison-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .comparison-card.bad .comparison-label {
+      color: #E11D48;
+    }
+
+    .comparison-card.good .comparison-label {
+      color: #16A34A;
+    }
+
+    /* Token Swatches */
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .token-item {
+      border: 1px solid var(--border-main);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      background: #FFFFFF;
+    }
+
+    .token-color {
+      height: 36px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .token-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .token-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Modal for Expand */
+    .diagram-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .diagram-modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #FFFFFF;
+      border-radius: var(--radius-xl);
+      max-width: 95vw;
+      max-height: 90vh;
+      width: 1000px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-main);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FAFAFA;
+    }
+
+    .modal-body {
+      padding: 32px;
+      overflow: auto;
+      flex: 1;
+      background-color: #F8F9FA;
+      background-image: radial-gradient(#E4E4E7 1px, transparent 1px);
+      background-size: 20px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .code-block {
+      background: #18181B;
+      color: #F4F4F5;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    footer.page-footer {
+      margin-top: 80px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-main);
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body class="bg-grid">
+
+  <!-- Top Sticky Navigation -->
+  <header class="top-nav">
+    <div class="brand">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="7" height="7" x="3" y="3" rx="1"/>
+        <rect width="7" height="7" x="14" y="3" rx="1"/>
+        <rect width="7" height="7" x="14" y="14" rx="1"/>
+        <rect width="7" height="7" x="3" y="14" rx="1"/>
+      </svg>
+      <span>Workroom Architecture</span>
+      <span class="brand-badge">MVP Explainer</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#schema">Data Model</a>
+      <a href="#sync">Reactive Sync</a>
+      <a href="#simulator">Spatial Geometry</a>
+      <a href="#anti-slop">UI Craft</a>
+      <a href="#modularity">Modularity</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="#simulator" class="btn btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4Z"/></svg>
+        Live Simulator
+      </a>
+      <a href="http://localhost:5173" target="_blank" class="btn btn-primary">
+        Open App &rarr;
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Hero Section -->
+    <section class="hero" id="overview">
+      <div class="hero-eyebrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        System Architecture & Design Blueprint
+      </div>
+      <h1 class="hero-title">Mini Workroom Visual Explainer</h1>
+      <p class="hero-desc">
+        Mini Workroom is an opinionated, high-craft project workspace combining the precision of 
+        <strong>Linear</strong> (hairline issue rows), the flexibility of <strong>Notion</strong> (document hubs with <code>@mention</code> parsing), 
+        and the spatial freedom of <strong>FigJam</strong> (infinite 2D whiteboard with magnetic Epic sections and live Bezier dependency connectors).
+      </p>
+      <div class="meta-tags">
+        <span class="tag"><span class="tag-dot"></span>React 18 + Vite 5 + TS</span>
+        <span class="tag"><span class="tag-dot"></span>Express + better-sqlite3 (WAL)</span>
+        <span class="tag"><span class="tag-dot"></span>Zustand Single Source of Truth</span>
+        <span class="tag"><span class="tag-dot"></span>Absolute World Coordinates</span>
+        <span class="tag"><span class="tag-dot"></span>Anti-Slop Craft System (&lt;300 Lines/File)</span>
+      </div>
+    </section>
+
+    <!-- SECTION 1: ARCHITECTURE OVERVIEW -->
+    <section class="section-wrap">
+      <div class="section-header">
+        <span class="section-num">SECTION 01</span>
+        <h2 class="section-title">End-to-End System Architecture</h2>
+        <p class="section-desc">
+          How data flows from user interactions in 4 distinct viewports down through the unified Zustand state,
+          Vite HTTP proxy, Express REST router, and WAL-mode SQLite database.
+        </p>
+      </div>
+
+      <div class="diagram-shell" id="shell-arch">
+        <div class="diagram-header">
+          <span class="diagram-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            System Data Flow & Component Hierarchy
+          </span>
+          <div class="diagram-controls">
+            <button class="ctrl-btn" onclick="zoomDiagram('shell-arch', -0.15)" title="Zoom Out">&minus;</button>
+            <button class="ctrl-btn" onclick="zoomDiagram('shell-arch', 0.15)" title="Zoom In">&plus;</button>
+            <button class="ctrl-btn" onclick="resetDiagram('shell-arch')" title="Reset Zoom">&#8635;</button>
+            <button class="ctrl-btn" onclick="openDiagramModal('arch-mermaid', 'System Data Flow & Component Hierarchy')" title="Expand Modal">&#x26F6;</button>
+          </div>
+        </div>
+        <div class="diagram-viewport" id="viewport-arch">
+          <div class="mermaid" id="arch-mermaid">
+graph TD
+  subgraph Client ["Client Layer (React 18 + Vite + Tailwind)"]
+    direction TB
+    UI_List["ListView<br/>Hairline 36px Linear Rows"]
+    UI_Kanban["KanbanView<br/>Flat & Epic Swimlanes"]
+    UI_Canvas["CanvasView<br/>2D Spatial World + Bezier"]
+    UI_DocHub["DocHubDrawer<br/>Markdown @mention Parser"]
+    UI_Modal["TaskDetailModal<br/>Shared Unified Inspector"]
+
+    Store["Zustand Central Store (useWorkroomStore)<br/>Single Source of Truth: tasks, epics, docs, deps"]
+
+    UI_List -->|Action| Store
+    UI_Kanban -->|Action| Store
+    UI_Canvas -->|Action| Store
+    UI_DocHub -->|Action| Store
+    UI_Modal -->|Action| Store
+
+    Store -.->|Reactive Subscription| UI_List
+    Store -.->|Reactive Subscription| UI_Kanban
+    Store -.->|Reactive Subscription| UI_Canvas
+    Store -.->|Reactive Subscription| UI_DocHub
+  end
+
+  subgraph Network ["Transport Layer"]
+    ViteProxy["Vite Proxy<br/>/api -> :3001"]
+    Store <==>|fetch JSON REST| ViteProxy
+  end
+
+  subgraph Server ["Server Layer (Node.js + Express)"]
+    Router["Express REST Endpoints<br/>/api/tasks, /api/epics, /api/docs..."]
+    ViteProxy <==>|HTTP :3001| Router
+    
+    subgraph DataEngine ["better-sqlite3 Engine"]
+      DB[("workroom.db<br/>WAL Mode & Foreign Keys ON")]
+      Seed["seedDataIfEmpty()<br/>Initial Demo Workspace"]
+      Router <==>|Synchronous Prepared Statements| DB
+      Seed -.->|Bootstrap on empty DB| DB
+    end
+  end
+
+  classDef storeBox fill:#EEF2FF,stroke:#6366F1,stroke-width:2px,color:#1E1B4B;
+  classDef viewCard fill:#FFFFFF,stroke:#E4E4E7,stroke-width:1.5px,color:#18181B;
+  classDef dbBox fill:#F0FDF4,stroke:#16A34A,stroke-width:2px,color:#064E3B;
+  class Store storeBox;
+  class UI_List,UI_Kanban,UI_Canvas,UI_DocHub,UI_Modal viewCard;
+  class DB dbBox;
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 6px;">1. Synchronous SQLite Execution</h3>
+          <p style="font-size: 13px; color: var(--text-muted);">
+            Using <code>better-sqlite3</code> eliminates async connection pooling lag. Database operations run in sub-millisecond synchronous transactions inside the Express worker process with Write-Ahead Logging (WAL).
+          </p>
+        </div>
+        <div class="card">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 6px;">2. Single Source of Truth</h3>
+          <p style="font-size: 13px; color: var(--text-muted);">
+            All views read from <code>useWorkroomStore.ts</code>. A status change in Kanban, a drag on Canvas, or an edit in List view triggers an optimistic update and syncs with backend without view drift.
+          </p>
+        </div>
+        <div class="card">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 6px;">3. Strict Zero-Slop Architecture</h3>
+          <p style="font-size: 13px; color: var(--text-muted);">
+            Every file strictly obeys the <strong>&lt; 300 lines limit</strong>. Components are broken down into granular submodules like <code>CanvasEpicFrame</code>, <code>CanvasDependencyEdges</code>, and <code>TaskAssigneeDropdown</code>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: RELATIONAL DATA MODEL -->
+    <section class="section-wrap" id="schema">
+      <div class="section-header">
+        <span class="section-num">SECTION 02</span>
+        <h2 class="section-title">Flat Relational Database Graph</h2>
+        <p class="section-desc">
+          7 clean SQLite tables modeling optional hierarchy, absolute canvas geometry, dependency graphs, and doc hubs.
+        </p>
+      </div>
+
+      <div class="diagram-shell" id="shell-schema">
+        <div class="diagram-header">
+          <span class="diagram-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+            SQLite Entity-Relationship Diagram (ERD)
+          </span>
+          <div class="diagram-controls">
+            <button class="ctrl-btn" onclick="zoomDiagram('shell-schema', -0.15)" title="Zoom Out">&minus;</button>
+            <button class="ctrl-btn" onclick="zoomDiagram('shell-schema', 0.15)" title="Zoom In">&plus;</button>
+            <button class="ctrl-btn" onclick="resetDiagram('shell-schema')" title="Reset Zoom">&#8635;</button>
+            <button class="ctrl-btn" onclick="openDiagramModal('schema-mermaid', 'SQLite Entity-Relationship Diagram (ERD)')" title="Expand Modal">&#x26F6;</button>
+          </div>
+        </div>
+        <div class="diagram-viewport" id="viewport-schema">
+          <div class="mermaid" id="schema-mermaid">
+erDiagram
+    users {
+        TEXT id PK
+        TEXT username UK
+        TEXT password
+        TEXT display_name
+        TEXT avatar_color
+    }
+
+    projects {
+        TEXT id PK
+        TEXT name
+        TEXT description
+        TEXT owner_id FK
+        TEXT created_at
+    }
+
+    epics {
+        TEXT id PK
+        TEXT project_id FK
+        TEXT title
+        TEXT color
+        REAL canvas_x
+        REAL canvas_y
+        REAL canvas_width
+        REAL canvas_height
+    }
+
+    tasks {
+        TEXT id PK
+        TEXT project_id FK
+        TEXT epic_id FK "Nullable: Optional Epic container"
+        TEXT title
+        TEXT description "Supports @[Title](doc:ID)"
+        TEXT status "todo | in_progress | review | done"
+        TEXT priority "low | medium | high"
+        TEXT assignee_id FK "Nullable"
+        REAL canvas_x
+        REAL canvas_y
+    }
+
+    subtasks {
+        TEXT id PK
+        TEXT task_id FK
+        TEXT title
+        INTEGER is_completed "0 or 1"
+    }
+
+    task_dependencies {
+        TEXT id PK
+        TEXT project_id FK
+        TEXT source_task_id FK "Prerequisite"
+        TEXT target_task_id FK "Dependent"
+    }
+
+    project_docs {
+        TEXT id PK
+        TEXT project_id FK
+        TEXT title
+        TEXT category "General | Architecture..."
+        TEXT doc_type "markdown | link | note"
+        TEXT content
+        TEXT updated_by FK "Nullable"
+        TEXT updated_at
+    }
+
+    users ||--o{ projects : "owns"
+    projects ||--o{ epics : "contains"
+    projects ||--o{ tasks : "contains"
+    projects ||--o{ project_docs : "contains"
+    epics ||--o{ tasks : "groups (optional)"
+    tasks ||--o{ subtasks : "breaks down into"
+    tasks ||--o{ task_dependencies : "is prerequisite (source)"
+    tasks ||--o{ task_dependencies : "is dependent (target)"
+    users ||--o{ tasks : "assigned to"
+    users ||--o{ project_docs : "authors"
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Schema Inspector Tabs -->
+      <div class="card">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTableTab('tasks')">tasks</button>
+          <button class="tab-btn" onclick="switchTableTab('epics')">epics</button>
+          <button class="tab-btn" onclick="switchTableTab('task_dependencies')">task_dependencies</button>
+          <button class="tab-btn" onclick="switchTableTab('project_docs')">project_docs</button>
+          <button class="tab-btn" onclick="switchTableTab('users')">users & projects</button>
+        </div>
+
+        <div id="tab-content-tasks" class="tab-pane">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Type</th>
+                  <th>Key / Constraint</th>
+                  <th>Design & Architectural Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>id</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><span class="pk-chip">PRIMARY KEY</span></td>
+                  <td>Unique nanoid / UUID string identifier.</td>
+                </tr>
+                <tr>
+                  <td><code>project_id</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><span class="fk-chip">FK -> projects(id) ON DELETE CASCADE</span></td>
+                  <td>Enforces multi-project workspace data isolation.</td>
+                </tr>
+                <tr>
+                  <td><code>epic_id</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><span class="fk-chip">FK -> epics(id) ON DELETE SET NULL</span></td>
+                  <td><strong>Optional Hierarchy:</strong> When NULL, task is independent. When Epic is deleted, tasks remain intact.</td>
+                </tr>
+                <tr>
+                  <td><code>title</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td>NOT NULL</td>
+                  <td>Task headline displayed across all four views.</td>
+                </tr>
+                <tr>
+                  <td><code>description</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td>DEFAULT ''</td>
+                  <td>Markdown enabled. Parses <code>@[Doc Title](doc:DOC_ID)</code> into clickable quick-view chips.</td>
+                </tr>
+                <tr>
+                  <td><code>status</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><code>todo</code> | <code>in_progress</code> | <code>review</code> | <code>done</code></td>
+                  <td>Powers Kanban column grouping and List view status indicators.</td>
+                </tr>
+                <tr>
+                  <td><code>canvas_x, canvas_y</code></td>
+                  <td><span class="code-chip">REAL</span></td>
+                  <td>DEFAULT 120, 140</td>
+                  <td><strong>Absolute World Coordinates</strong> for 2D Canvas positioning. Free from viewport scroll offsets.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-content-epics" class="tab-pane" style="display: none;">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Type</th>
+                  <th>Key / Constraint</th>
+                  <th>Design & Architectural Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>id</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><span class="pk-chip">PRIMARY KEY</span></td>
+                  <td>Unique Epic container ID.</td>
+                </tr>
+                <tr>
+                  <td><code>title</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td>NOT NULL</td>
+                  <td>Header rendered floating above the container boundary (FigJam style).</td>
+                </tr>
+                <tr>
+                  <td><code>color</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td>Hex Color (e.g. <code>#4F46E5</code>)</td>
+                  <td>Used for subtle 4% background tint and 1px border highlight.</td>
+                </tr>
+                <tr>
+                  <td><code>canvas_x, canvas_y</code></td>
+                  <td><span class="code-chip">REAL</span></td>
+                  <td>DEFAULT 80, 80</td>
+                  <td>Top-left origin of the Epic container bounding box.</td>
+                </tr>
+                <tr>
+                  <td><code>canvas_width, canvas_height</code></td>
+                  <td><span class="code-chip">REAL</span></td>
+                  <td>DEFAULT 520, 360</td>
+                  <td>Defines spatial containment region for member tasks. Resizable via bottom-right handle.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-content-task_dependencies" class="tab-pane" style="display: none;">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Type</th>
+                  <th>Key / Constraint</th>
+                  <th>Design & Architectural Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>source_task_id</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><span class="fk-chip">FK -> tasks(id) ON DELETE CASCADE</span></td>
+                  <td>The prerequisite task. On Canvas, Bezier arrow originates from right port.</td>
+                </tr>
+                <tr>
+                  <td><code>target_task_id</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><span class="fk-chip">FK -> tasks(id) ON DELETE CASCADE</span></td>
+                  <td>The dependent task. On Canvas, Bezier arrow arrives at left port. Blocked if source not done.</td>
+                </tr>
+                <tr>
+                  <td><code>Cycle Prevention</code></td>
+                  <td><span class="code-chip">APPLICATION LOGIC</span></td>
+                  <td><code>hasCircularDependency(src, tgt)</code></td>
+                  <td>Depth-First Search (DFS) graph traversal rejects any connection that creates an infinite loop.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-content-project_docs" class="tab-pane" style="display: none;">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Type</th>
+                  <th>Key / Constraint</th>
+                  <th>Design & Architectural Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>title</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td>NOT NULL</td>
+                  <td>Title of the shared resource (e.g. "API Schema v2", "Figma Spec").</td>
+                </tr>
+                <tr>
+                  <td><code>doc_type</code></td>
+                  <td><span class="code-chip">TEXT</span></td>
+                  <td><code>markdown</code> | <code>link</code> | <code>note</code></td>
+                  <td>Renders rich Markdown reader, external bookmark, or quick note cards.</td>
+                </tr>
+                <tr>
+                  <td><code>@Mention Integration</code></td>
+                  <td><span class="code-chip">REGEX LINKER</span></td>
+                  <td><code>@[Title](doc:ID)</code></td>
+                  <td>Instantly clickable from Task description cards to open preview drawer.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-content-users" class="tab-pane" style="display: none;">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Table</th>
+                  <th>Columns</th>
+                  <th>Key Design Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>users</code></td>
+                  <td><code>id, username, password, display_name, avatar_color</code></td>
+                  <td>Zero-friction demo auth. Passwords stored plain for MVP testing. Pre-seeded with admin, alice, bob.</td>
+                </tr>
+                <tr>
+                  <td><code>projects</code></td>
+                  <td><code>id, name, description, owner_id, created_at</code></td>
+                  <td>Root container for all epics, tasks, and documents. Multi-tenant workspace isolation.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: MULTI-VIEW REACTIVE SYNC -->
+    <section class="section-wrap" id="sync">
+      <div class="section-header">
+        <span class="section-num">SECTION 03</span>
+        <h2 class="section-title">Multi-View Synchronization Matrix</h2>
+        <p class="section-desc">
+          How the 4 native views interpret and display the exact same SQLite state with zero synchronization delay.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <h3 style="font-size: 15px; font-weight: 600;">1. Linear-Style List View</h3>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Engineered for high-density keyboard workflows. Each row is fixed at <code>36px (h-9)</code> with hairline borders, status icons, assignee avatars, and priority dots.
+          </p>
+          <ul style="font-size: 13px; color: var(--text-muted); padding-left: 20px; line-height: 1.6;">
+            <li><strong>Collapsible Epic Sections:</strong> Groups tasks by Epic with progress bar.</li>
+            <li><strong>Independent Tasks Group:</strong> Gracefully groups tasks with <code>epic_id = null</code>.</li>
+            <li><strong>Inline Quick Add:</strong> <code>+ Thêm việc</code> triggers keyboard-first creation.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+            <h3 style="font-size: 15px; font-weight: 600;">2. Dual-Mode Kanban View</h3>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Fluid native HTML5 drag-and-drop between columns (<code>todo &rarr; in_progress &rarr; review &rarr; done</code>).
+          </p>
+          <ul style="font-size: 13px; color: var(--text-muted); padding-left: 20px; line-height: 1.6;">
+            <li><strong>Flat Columns Mode:</strong> Classic 4-column overview of the entire sprint.</li>
+            <li><strong>Epic Swimlanes Mode:</strong> Divides the board into horizontal lanes per Epic, plus a dedicated lane for independent tasks.</li>
+            <li><strong>Live Lock Indicator:</strong> Shows subtle amber lock if prerequisites are incomplete.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+            <h3 style="font-size: 15px; font-weight: 600;">3. FigJam 2D Spatial Canvas</h3>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Freeform visual ideation surface with infinite panning, wheel zoom, and absolute world coordinate tracking.
+          </p>
+          <ul style="font-size: 13px; color: var(--text-muted); padding-left: 20px; line-height: 1.6;">
+            <li><strong>Magnetic Epic Frames:</strong> Dragging an Epic moves all internal tasks via <code>(dx, dy)</code> delta propagation.</li>
+            <li><strong>Auto-Parenting on Drop:</strong> Dropping a task into an Epic sets <code>epic_id</code> automatically.</li>
+            <li><strong>Interactive SVG Arrows:</strong> Real-time Cubic Bezier routing with midpoint deletion tags.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+            <h3 style="font-size: 15px; font-weight: 600;">4. Shared Document Hub & @Mentions</h3>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            A centralized team knowledge base modeled after Microsoft Teams Class Share and Notion Wiki docs.
+          </p>
+          <ul style="font-size: 13px; color: var(--text-muted); padding-left: 20px; line-height: 1.6;">
+            <li><strong>Tri-Type Documents:</strong> Markdown manuals, external web links, and pinned quick notes.</li>
+            <li><strong>Interactive @Mention Chip:</strong> Clicking <code>@[Title](doc:ID)</code> in any view slides open the doc viewer.</li>
+            <li><strong>Inline Categorization:</strong> Filter by Architecture, Guidelines, Product, or General.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: SPATIAL CANVAS GEOMETRY & INTERACTIVE SIMULATOR -->
+    <section class="section-wrap" id="simulator">
+      <div class="section-header">
+        <span class="section-num">SECTION 04</span>
+        <h2 class="section-title">Canvas Spatial Geometry & Live Interactive Simulator</h2>
+        <p class="section-desc">
+          Test the exact bounding box collision math and Cubic Bezier arrow routing running in <code>canvasGeometry.ts</code>.
+          <strong>Drag the task card below</strong> into and out of the Epic Container to watch the live containment calculation and auto-parenting logic!
+        </p>
+      </div>
+
+      <div class="sandbox-container">
+        <!-- Live status bar -->
+        <div class="sandbox-toolbar">
+          <div class="sandbox-status">
+            <span>Task Center: <strong id="sim-coord-center">(200, 195)</strong></span>
+            <span>Containment: <span id="sim-status-pill" class="status-pill inside">&bull; Inside Epic (Parented)</span></span>
+            <span>Active Epic ID: <code id="sim-epic-id" class="code-chip">epic_backend</code></span>
+          </div>
+          <div>
+            <button class="btn btn-secondary" onclick="resetSimulator()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              Reset Coordinates
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Sandbox Canvas Surface -->
+        <div class="sandbox-canvas-wrap" id="sandbox-surface">
+          <!-- Background SVG for connecting Bezier arrow -->
+          <svg id="sandbox-svg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2;">
+            <defs>
+              <marker id="sim-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#4F46E5" />
+              </marker>
+            </defs>
+            <path id="sim-bezier-curve" d="" fill="none" stroke="#4F46E5" stroke-width="2.5" stroke-dasharray="none" marker-end="url(#sim-arrow)" />
+            <circle id="sim-bezier-midpoint" cx="0" cy="0" r="4" fill="#4F46E5" stroke="#FFFFFF" stroke-width="2" />
+          </svg>
+
+          <!-- Epic Frame Container -->
+          <div id="sim-epic" class="sim-epic-frame" style="left: 60px; top: 50px; width: 440px; height: 320px;">
+            <div class="sim-epic-header">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #4F46E5;"></span>
+              <span>Epic: Backend Core (440 &times; 320)</span>
+            </div>
+          </div>
+
+          <!-- Draggable Task Node (Source) -->
+          <div id="sim-task" class="sim-task-card" style="left: 100px; top: 120px;">
+            <div>
+              <div class="sim-task-title">WR-101 Setup Express API</div>
+              <div style="font-size: 11px; color: var(--text-faint); margin-top: 2px;">Drag me around!</div>
+            </div>
+            <div class="sim-task-meta">
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                2/3
+              </span>
+              <span style="display: flex; align-items: center; gap: 4px; color: #D97706; font-weight: 500;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706;"></span>
+                High
+              </span>
+            </div>
+            <!-- Output Port (Right) -->
+            <div class="sim-port port-right" title="Dependency Prerequisite Source"></div>
+          </div>
+
+          <!-- Target Task Node (Fixed for demonstration) -->
+          <div id="sim-target" class="sim-target-task" style="left: 640px; top: 190px;">
+            <div>
+              <div class="sim-task-title" style="color: #374151;">WR-102 Build SQLite Schema</div>
+              <div style="font-size: 11px; color: #9CA3AF; margin-top: 2px;">Target Dependent Task</div>
+            </div>
+            <div class="sim-task-meta">
+              <span style="display: flex; align-items: center; gap: 4px; color: #10B981; font-weight: 500;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981;"></span>
+                Med
+              </span>
+              <span style="color: #6B7280;">Assignee: Bob</span>
+            </div>
+            <!-- Input Port (Left) -->
+            <div class="sim-port port-left" title="Dependency Target"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mathematical Formulations -->
+      <div class="grid-2" style="margin-top: 20px;">
+        <div class="card">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">1. Task Center & Bounding Box Hit-Test</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Calculated in <code>canvasGeometry.ts</code>. A task belongs to an Epic if its center point lies within the Epic's boundary box:
+          </p>
+          <div class="code-block">
+P_center = (task.canvasX + 120, task.canvasY + 50)
+
+isInside = (
+  P_center.x >= epic.canvasX &&
+  P_center.x <= epic.canvasX + epic.canvasWidth &&
+  P_center.y >= epic.canvasY &&
+  P_center.y <= epic.canvasY + epic.canvasHeight
+);
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">2. Cubic Bezier Curve Formula</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Connects the source right port to the target left port with curvature proportional to distance:
+          </p>
+          <div class="code-block">
+curvature = Math.max(Math.abs(x2 - x1) * 0.5, 45);
+P0 = (x1, y1);       P1 = (x1 + curvature, y1);
+P3 = (x2, y2);       P2 = (x2 - curvature, y2);
+
+Path = `M ${P0.x} ${P0.y} C ${P1.x} ${P1.y}, ${P2.x} ${P2.y}, ${P3.x} ${P3.y}`;
+Midpoint(t=0.5) = 0.125*P0 + 0.375*P1 + 0.375*P2 + 0.125*P3;
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: ANTI-SLOP DESIGN SYSTEM & UI CRAFT -->
+    <section class="section-wrap" id="anti-slop">
+      <div class="section-header">
+        <span class="section-num">SECTION 05</span>
+        <h2 class="section-title">High-Craft Anti-Slop UI/UX System</h2>
+        <p class="section-desc">
+          Direct comparison showing how Mini Workroom eliminated generic AI template anti-patterns in favor of Notion/Linear/FigJam elegance.
+        </p>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-card bad">
+          <div class="comparison-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Generic AI Slop Anti-Patterns (Banned)
+          </div>
+          <ul style="font-size: 13px; color: #881337; padding-left: 20px; line-height: 1.8;">
+            <li><strong>Emoji text soup:</strong> Cluttering titles with <code>🔒</code>, <code>📎</code>, <code>☑</code>, <code>⚠</code>.</li>
+            <li><strong>Pill-in-box nesting:</strong> Wrapping every subtask count in heavy borders and gray pills.</li>
+            <li><strong>Dark-mode slate slop:</strong> Blinding neon emerald or glowing purple gradients on dark slate.</li>
+            <li><strong>Persistent port distraction:</strong> Cluttering canvas cards with permanent <code>+</code> connection buttons.</li>
+            <li><strong>Repetitive Epic badges:</strong> Repeating the epic badge inside cards already positioned inside an Epic container.</li>
+          </ul>
+        </div>
+
+        <div class="comparison-card good">
+          <div class="comparison-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            High-Craft Linear / FigJam Implementation
+          </div>
+          <ul style="font-size: 13px; color: #064E3B; padding-left: 20px; line-height: 1.8;">
+            <li><strong>Lucide micro-icons:</strong> Standardized <code>w-3.5 h-3.5</code> with refined <code>strokeWidth={1.75}</code>.</li>
+            <li><strong>Flat inline typography:</strong> Metadata presented cleanly without box outlines.</li>
+            <li><strong>Refined light palette:</strong> Pure white <code>#FFFFFF</code> cards against warm <code>#F8F9FA</code> dot matrix surface.</li>
+            <li><strong>Hover-only ports:</strong> Connection anchors remain hidden (<code>opacity-0</code>) until user hovers over card.</li>
+            <li><strong>FigJam floating headers:</strong> Clean badge anchored at <code>-top-7 left-0</code> with 4% background tint.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Color and Design Tokens -->
+      <div class="card" style="margin-top: 24px;">
+        <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 14px;">Design Token Palette (Strict Light Mode)</h3>
+        <div class="token-grid">
+          <div class="token-item">
+            <div class="token-color" style="background: #F8F9FA;"></div>
+            <div class="token-name">Surface Background</div>
+            <div class="token-val">#F8F9FA (bg-zinc-50)</div>
+          </div>
+          <div class="token-item">
+            <div class="token-color" style="background: #FFFFFF;"></div>
+            <div class="token-name">Card & Shell Surface</div>
+            <div class="token-val">#FFFFFF (pure white)</div>
+          </div>
+          <div class="token-item">
+            <div class="token-color" style="background: #E4E4E7;"></div>
+            <div class="token-name">Hairline Border</div>
+            <div class="token-val">#E4E4E7 (border-zinc-200)</div>
+          </div>
+          <div class="token-item">
+            <div class="token-color" style="background: #09090B;"></div>
+            <div class="token-name">Primary Ink CTA</div>
+            <div class="token-val">#09090B (bg-zinc-900)</div>
+          </div>
+          <div class="token-item">
+            <div class="token-color" style="background: #4F46E5;"></div>
+            <div class="token-name">Accent Indigo</div>
+            <div class="token-val">#4F46E5 (Canvas / Brand)</div>
+          </div>
+          <div class="token-item">
+            <div class="token-color" style="background: #D97706;"></div>
+            <div class="token-name">Dependency Lock Amber</div>
+            <div class="token-val">#D97706 (Warning / Block)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: CODEBASE MODULARITY VERIFICATION -->
+    <section class="section-wrap" id="modularity">
+      <div class="section-header">
+        <span class="section-num">SECTION 06</span>
+        <h2 class="section-title">Codebase Modularity & Production Audit</h2>
+        <p class="section-desc">
+          Strict verification of the &lt; 300 lines limit per file rule across all frontend viewports and backend modules.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Component / Module</th>
+                <th>File Path</th>
+                <th>Line Count</th>
+                <th>Modularization Strategy</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>CanvasView</strong></td>
+                <td><code>src/components/views/CanvasView.tsx</code></td>
+                <td><span class="code-chip">278 lines</span></td>
+                <td>Extracted toolbar, dependency edges, node, and frame to <code>views/canvas/*</code></td>
+                <td><span class="status-pill inside">&check; Compliant (&lt;300)</span></td>
+              </tr>
+              <tr>
+                <td><strong>CanvasTaskNode</strong></td>
+                <td><code>src/components/views/canvas/CanvasTaskNode.tsx</code></td>
+                <td><span class="code-chip">238 lines</span></td>
+                <td>Isolated hover port anchors and inline flat metadata</td>
+                <td><span class="status-pill inside">&check; Compliant (&lt;300)</span></td>
+              </tr>
+              <tr>
+                <td><strong>CanvasEpicFrame</strong></td>
+                <td><code>src/components/views/canvas/CanvasEpicFrame.tsx</code></td>
+                <td><span class="code-chip">215 lines</span></td>
+                <td>Encapsulated resize handle and FigJam floating header</td>
+                <td><span class="status-pill inside">&check; Compliant (&lt;300)</span></td>
+              </tr>
+              <tr>
+                <td><strong>ListView</strong></td>
+                <td><code>src/components/views/ListView.tsx</code></td>
+                <td><span class="code-chip">256 lines</span></td>
+                <td>Broken down into <code>ListTaskRow</code>, <code>ListEpicSection</code>, <code>ListToolbar</code></td>
+                <td><span class="status-pill inside">&check; Compliant (&lt;300)</span></td>
+              </tr>
+              <tr>
+                <td><strong>ProjectWorkspace</strong></td>
+                <td><code>src/pages/ProjectWorkspace.tsx</code></td>
+                <td><span class="code-chip">228 lines</span></td>
+                <td>Isolated Linear breadcrumb, segmented toggle, and avatar stack</td>
+                <td><span class="status-pill inside">&check; Compliant (&lt;300)</span></td>
+              </tr>
+              <tr>
+                <td><strong>TaskDetailModal</strong></td>
+                <td><code>src/components/shared/TaskDetailModal.tsx</code></td>
+                <td><span class="code-chip">165 lines</span></td>
+                <td>Subtasks, dependencies, and assignees decoupled into subcomponents</td>
+                <td><span class="status-pill inside">&check; Compliant (&lt;300)</span></td>
+              </tr>
+              <tr>
+                <td><strong>DocHubDrawer</strong></td>
+                <td><code>src/components/docs/DocHubDrawer.tsx</code></td>
+                <td><span class="code-chip">223 lines</span></td>
+                <td>Separate form modal and preview modal files</td>
+                <td><span class="status-pill inside">&check; Compliant (&lt;300)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <p>Mini Workroom MVP &bull; High-Craft Engineering Visual Explainer &bull; Built with React, Vite, Zustand, Express, & SQLite</p>
+    </footer>
+
+  </main>
+
+  <!-- Expanded Diagram Modal -->
+  <div class="diagram-modal" id="diag-modal" onclick="closeDiagramModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h4 id="modal-title" style="font-size: 14px; font-weight: 600;">Diagram Inspector</h4>
+        <button class="ctrl-btn" onclick="closeDiagramModal()" title="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Mermaid with clean neutral styling
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'neutral',
+      themeVariables: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '13px',
+        primaryColor: '#FFFFFF',
+        primaryTextColor: '#18181B',
+        primaryBorderColor: '#D4D4D8',
+        lineColor: '#71717A',
+        secondaryColor: '#F4F4F5',
+        tertiaryColor: '#FAFAFA'
+      }
+    });
+
+    // Zoom and pan state per diagram
+    const diagramScales = {};
+
+    function zoomDiagram(shellId, delta) {
+      if (!diagramScales[shellId]) diagramScales[shellId] = 1.0;
+      diagramScales[shellId] = Math.max(0.4, Math.min(2.5, diagramScales[shellId] + delta));
+      const target = document.querySelector(`#${shellId} .mermaid`);
+      if (target) {
+        target.style.transform = `scale(${diagramScales[shellId]})`;
+      }
+    }
+
+    function resetDiagram(shellId) {
+      diagramScales[shellId] = 1.0;
+      const target = document.querySelector(`#${shellId} .mermaid`);
+      if (target) {
+        target.style.transform = `scale(1)`;
+      }
+    }
+
+    function openDiagramModal(sourceId, title) {
+      const source = document.getElementById(sourceId);
+      const modal = document.getElementById('diag-modal');
+      const modalBody = document.getElementById('modal-body');
+      const modalTitle = document.getElementById('modal-title');
+      
+      modalTitle.innerText = title;
+      modalBody.innerHTML = `<div class="mermaid" style="transform: scale(1.1); transform-origin: center;">${source.innerHTML}</div>`;
+      modal.classList.add('open');
+      mermaid.run({ nodes: modalBody.querySelectorAll('.mermaid') });
+    }
+
+    function closeDiagramModal(e) {
+      document.getElementById('diag-modal').classList.remove('open');
+    }
+
+    // Tabs logic
+    function switchTableTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.style.display = 'none');
+      
+      event.target.classList.add('active');
+      const activePane = document.getElementById(`tab-content-${tabName}`);
+      if (activePane) activePane.style.display = 'block';
+    }
+
+    // ==========================================
+    // INTERACTIVE SPATIAL SIMULATOR SCRIPT
+    // ==========================================
+    const simTask = document.getElementById('sim-task');
+    const simEpic = document.getElementById('sim-epic');
+    const simTarget = document.getElementById('sim-target');
+    const simCoordCenter = document.getElementById('sim-coord-center');
+    const simStatusPill = document.getElementById('sim-status-pill');
+    const simEpicId = document.getElementById('sim-epic-id');
+    const simBezierCurve = document.getElementById('sim-bezier-curve');
+    const simBezierMidpoint = document.getElementById('sim-bezier-midpoint');
+    const sandboxSurface = document.getElementById('sandbox-surface');
+
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    // Initial position
+    let taskX = 100;
+    let taskY = 120;
+    const taskW = 240;
+    const taskH = 100;
+
+    const epicRect = { x: 60, y: 50, w: 440, h: 320 };
+    const targetPos = { x: 640, y: 190, portX: 640, portY: 190 + 45 };
+
+    function updateSimulator() {
+      // 1. Move task element
+      simTask.style.left = `${taskX}px`;
+      simTask.style.top = `${taskY}px`;
+
+      // 2. Compute center point
+      const centerX = taskX + 120;
+      const centerY = taskY + 50;
+      simCoordCenter.innerText = `(${Math.round(centerX)}, ${Math.round(centerY)})`;
+
+      // 3. Collision hit-test
+      const isInside = (
+        centerX >= epicRect.x &&
+        centerX <= epicRect.x + epicRect.w &&
+        centerY >= epicRect.y &&
+        centerY <= epicRect.y + epicRect.h
+      );
+
+      if (isInside) {
+        simStatusPill.className = 'status-pill inside';
+        simStatusPill.innerHTML = '&bull; Inside Epic (Parented)';
+        simEpicId.innerText = 'epic_backend';
+        simEpic.style.borderColor = '#4F46E5';
+        simEpic.style.background = 'rgba(79, 70, 229, 0.05)';
+      } else {
+        simStatusPill.className = 'status-pill outside';
+        simStatusPill.innerHTML = '&bull; Outside (Independent task)';
+        simEpicId.innerText = 'null';
+        simEpic.style.borderColor = '#D4D4D8';
+        simEpic.style.background = 'rgba(212, 212, 216, 0.03)';
+      }
+
+      // 4. Update SVG Cubic Bezier Curve from Task Right Port to Target Left Port
+      const sourcePortX = taskX + taskW;
+      const sourcePortY = taskY + 45;
+      const targetPortX = targetPos.portX;
+      const targetPortY = targetPos.portY;
+
+      const dx = Math.abs(targetPortX - sourcePortX);
+      const curvature = Math.max(dx * 0.5, 45);
+
+      const cx1 = sourcePortX + curvature;
+      const cy1 = sourcePortY;
+      const cx2 = targetPortX - curvature;
+      const cy2 = targetPortY;
+
+      const bezierPath = `M ${sourcePortX} ${sourcePortY} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${targetPortX} ${targetPortY}`;
+      simBezierCurve.setAttribute('d', bezierPath);
+
+      // Midpoint at t = 0.5: 0.125*P0 + 0.375*P1 + 0.375*P2 + 0.125*P3
+      const mx = 0.125 * sourcePortX + 0.375 * cx1 + 0.375 * cx2 + 0.125 * targetPortX;
+      const my = 0.125 * sourcePortY + 0.375 * cy1 + 0.375 * cy2 + 0.125 * targetPortY;
+      simBezierMidpoint.setAttribute('cx', mx);
+      simBezierMidpoint.setAttribute('cy', my);
+    }
+
+    // Drag events
+    simTask.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      const rect = simTask.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+      simTask.setPointerCapture(e.pointerId);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const surfaceRect = sandboxSurface.getBoundingClientRect();
+      taskX = e.clientX - surfaceRect.left - dragOffsetX;
+      taskY = e.clientY - surfaceRect.top - dragOffsetY;
+      updateSimulator();
+    });
+
+    window.addEventListener('pointerup', () => {
+      isDragging = false;
+    });
+
+    function resetSimulator() {
+      taskX = 100;
+      taskY = 120;
+      updateSimulator();
+    }
+
+    // Initialize Simulator on page load
+    updateSimulator();
+  </script>
+</body>
+</html>
